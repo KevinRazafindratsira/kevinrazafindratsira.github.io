@@ -1,590 +1,1433 @@
 <!DOCTYPE html>
-<html lang="mg">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Toko.mg – Mitady mpivarotra azo itokisana akaiky anao</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Maison en Bois - Cycle Jour/Nuit Automatique</title>
     <style>
-        :root {
-            --primary: #16a34a;
-            --primary-dark: #15803d;
-            --secondary: #22c55e;
-            --white: #ffffff;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-900: #111827;
-            --radius-lg: 1rem;
-            --radius-md: 0.5rem;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            box-sizing: border-box;
         }
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Conteneur global du Caddy */
+        .caddy-container {
+            position: relative;
+            width: 120px;
+            height: 100px;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+             right: 75%;
+    TOP: 34%;
+        }
+
+        /* Animation : Avance et recule au survol */
+        .caddy-container:hover {
+            transform: translateX(20px); /* Il avance vers la droite */
+        }
+
+        /* Le panier (le bac) */
+        .caddy-basket {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            width: 70px;
+            height: 50px;
+            border: 3px solid #ff0055;
+            border-radius: 2px 2px 15px 15px;
+            box-shadow: 0 0 15px #ff0055, inset 0 0 5px #ff0055;
+        }
+
+        /* Le grillage intérieur du panier */
+        .caddy-basket::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            height: 3px;
+            background: #ff0055;
+            box-shadow: 0 0 10px #ff0055;
+        }
+
+        /* La poignée et le montant arrière */
+        .caddy-handle {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 15px;
+            height: 60px;
+            border-left: 4px solid #ff0055;
+            border-top: 4px solid #ff0055;
+            border-radius: 5px 0 0 0;
+            box-shadow: -2px -2px 10px #ff0055;
+        }
+
+        /* Les roues */
+        .wheel {
+            position: absolute;
+            bottom: 15px;
+            width: 12px;
+            height: 12px;
+            border: 3px solid #ff0055;
+            border-radius: 50%;
+            background: #000;
+            box-shadow: 0 0 10px #ff0055;
+        }
+
+        .wheel-front { left: 70px; }
+        .wheel-back { left: 25px; }
+
+        /* Effet de lueur supplémentaire au survol */
+        .caddy-container:hover .caddy-basket,
+        .caddy-container:hover .caddy-handle,
+        .caddy-container:hover .wheel {
+            border-color: #ff5599;
+            box-shadow: 0 0 25px #ff5599;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Empêche le scroll */
+        }
+        /**/
+    .neon-button {
+        background: #ff0055;
+        color: #fff;
+        /* Lueur intense */
+        box-shadow: 0 0 10px #ff0055, 
+                    0 0 30px #ff0055, 
+                    0 0 60px #ff0055;
+        color: #fffefe;
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        padding: 15px 30px;
+        border: 3px solid #ff0055;
+        border-radius: 8px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s ease;
+        /* Effet néon discret au repos */
+        text-shadow: 0 0 5px #ff0055;
+        box-shadow: 0 0 10px rgba(255, 0, 85, 0.2), inset 0 0 5px rgba(255, 0, 85, 0.2);
+    }
+
+    /* ANIMATION AU SURVOL (HOVER) */
+    .neon-button:hover {
+        background: #ff0055;
+        color: #fff;
+        /* Lueur intense */
+        box-shadow: 0 0 10px #ff0055, 
+                    0 0 30px #ff0055, 
+                    0 0 60px #ff0055;
+        text-shadow: none;
+        transform: scale(1.05); /* Le bouton grossit un peu */
+    }
+
+    /* Petit effet de reflet qui passe sur le bouton */
+    .neon-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: all 0.6s;
+    }
+
+    .neon-button:hover::before {
+        left: 100%;
+    }
+
+   
+        body {
+            background-color: #1a1a1a; /* Fond sombre pour voir l'effet néon */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* Conteneur principal */
+        .billboard-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+                top: 47%;
+    POSITION: ABSOLUTE;
+    LEFT: 75%;
+        }
+
+        /* L'écran du panneau */
+        .screen {
+            width: 300px;
+            height: 160px;
+            background: #000;
+            border: 5px solid #333;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* Effet néon rose/rouge */
+            box-shadow: 0 0 20px #ff0055, inset 0 0 10px #ff0055;
+            border-color: #ff0055;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        /* Texte du haut */
+        .title {
+            color: #fff;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+
+        /* Texte principal (La réduction) */
+        .offer {
+            color: #ff0055;
+            font-size: 2.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055;
+            /* Animation de clignotement */
+            animation: flicker 1.5s infinite;
+        }
+
+        /* Le pied du panneau */
+        .post {
+            width: 12px;
+            height: 100px;
+            background: linear-gradient(to right, #222, #444, #222);
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 5px;
+        }
+
+        /* Animation de scintillement néon */
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                opacity: 1;
+                text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055;
+            }
+            20%, 24%, 55% {
+                opacity: 0.6;
+                text-shadow: none;
+            }
+        }
+ 
 
         body {
-            background-color: var(--gray-50);
-            color: var(--gray-900);
-            line-height: 1.6;
-        }
-
-        /* Modern Sticky Header */
-        header {
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--gray-200);
-            padding: 0.75rem 0;
-        }
-
-        .header-content {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 1.5rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-        }
-
-        .logo-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--primary);
-            text-decoration: none;
-        }
-
-        .logo span {
-            color: var(--gray-900);
-        }
-
-        .header-tagline {
-            font-size: 0.7rem;
-            color: var(--gray-600);
-            font-weight: 500;
-        }
-
-        .admin-contacts {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            font-size: 1rem;
-            font-weight: 700;
-        }
-
-        .admin-link {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            color: var(--gray-900);
-            transition: color 0.2s;
-        }
-
-        .admin-link:hover {
-            color: var(--primary);
-        }
-
-        .admin-link svg {
-            width: 1.25rem;
-            height: 1.25rem;
-            color: var(--primary);
-        }
-
-        .admin-phone {
-            font-size: 1.25rem;
-            color: var(--primary-dark);
-        }
-
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            padding: 4rem 1.5rem;
-            text-align: center;
-            border-radius: 0 0 2rem 2rem;
-            margin-bottom: -3rem;
-        }
-
-        .hero h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            letter-spacing: -0.025em;
-        }
-
-        .hero p {
-            font-size: 1.125rem;
-            opacity: 0.9;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 1.5rem 4rem 1.5rem;
-        }
-
-        /* Info Box */
-        .info-box {
-            background: #f0fdf4;
-            border-left: 4px solid var(--primary);
-            padding: 1.25rem;
-            border-radius: 0.5rem;
-            margin-bottom: 2rem;
-            font-weight: 500;
-            color: var(--primary-dark);
-            box-shadow: var(--shadow);
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+            transition: background 3s ease;
+            overflow-x: hidden;
+            padding: 20px;
             position: relative;
-            z-index: 10;
+            height: 100vh;
         }
 
-        /* Floating Filter Bar */
-        .search-bar {
-            background: var(--white);
-            padding: 1.5rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-            position: relative;
-            z-index: 10;
+        /* Ciel nocturne */
+        body.night {
+            background: linear-gradient(to bottom, #0a1931, #1a1a2e);
         }
 
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .filter-group label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--gray-700);
-        }
-
-        .filter-group select {
-            appearance: none;
-            background-color: var(--gray-50);
-            border: 1px solid var(--gray-200);
-            border-radius: var(--radius-md);
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            color: var(--gray-900);
-            cursor: pointer;
-            transition: all 0.2s;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1.25rem;
-        }
-
-        /* Map Section */
-        #map {
-            height: 450px;
-            width: 100%;
-            border-radius: var(--radius-lg);
-            margin-bottom: 3rem;
-            box-shadow: var(--shadow);
+        /* Soleil */
+        .sun {
+            position: fixed;
+            top: 50px;
+            right: 100px;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #FFD700, #FF8C00);
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.8);
             z-index: 1;
-            border: 4px solid var(--white);
+            transition: all 3s ease;
+            opacity: 1;
         }
 
-        /* Section Title */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
+        body.night .sun {
+            opacity: 0;
+            transform: translateY(200px);
         }
 
-        .section-header h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
+        /* Animation du soleil */
+        @keyframes sunRise {
+            0% { transform: translateY(200px) rotate(0deg); opacity: 0; }
+            100% { transform: translateY(0) rotate(360deg); opacity: 1; }
         }
 
-        .results-count {
-            color: var(--gray-600);
-            font-size: 0.875rem;
+        @keyframes sunSet {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(200px) rotate(360deg); opacity: 0; }
         }
 
-        /* Grid & Cards */
-        .listings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 2rem;
+        /* Lune */
+        .moon {
+            position: fixed;
+            top: 50px;
+            right: 100px;
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle at 30% 30%, #F0F8FF, #D3D3D3);
+            border-radius: 50%;
+            box-shadow: 
+                0 0 40px rgba(255, 255, 255, 0.5),
+                inset -10px -10px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            transition: all 3s ease;
+            opacity: 0;
         }
 
-        .card {
-            background: var(--white);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            border: 1px solid var(--gray-100);
+        body.night .moon {
+            opacity: 1;
+            animation: moonGlow 4s infinite alternate;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
+        @keyframes moonGlow {
+            0% { box-shadow: 0 0 40px rgba(255, 255, 255, 0.5); }
+            100% { box-shadow: 0 0 60px rgba(255, 255, 255, 0.8); }
         }
 
-        .card-image-container {
-            position: relative;
-            height: 180px;
-            background: var(--gray-100);
+        /* Cratères de lune */
+        .moon::before, .moon::after {
+            content: '';
+            position: absolute;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
         }
 
-        .card-image {
+        .moon::before {
+            width: 15px;
+            height: 15px;
+            top: 20px;
+            left: 15px;
+        }
+
+        .moon::after {
+            width: 20px;
+            height: 20px;
+            bottom: 20px;
+            right: 20px;
+        }
+
+        /* Étoiles */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 3s;
         }
 
-        .card-badge {
+        body.night .stars {
+            opacity: 1;
+        }
+
+        .star {
             position: absolute;
-            top: 1rem;
-            left: 1rem;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Nuages */
+        .clouds {
+            position: fixed;
+            top: 100px;
+            width: 100%;
+            height: 200px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .cloud {
+            position: absolute;
             background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(4px);
-            padding: 0.25rem 0.75rem;
-            border-radius: 2rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--primary);
-            text-transform: uppercase;
+            border-radius: 50px;
+            animation: cloudsMove 60s infinite linear;
         }
 
-        .card-content {
-            padding: 1.5rem;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
+        .cloud:nth-child(1) {
+            width: 150px;
+            height: 60px;
+            top: 50px;
+            left: -200px;
+            animation-delay: 0s;
         }
 
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-bottom: 0.4rem;
+        .cloud:nth-child(2) {
+            width: 120px;
+            height: 50px;
+            top: 100px;
+            left: -300px;
+            animation-delay: 10s;
         }
 
-        .card-location {
-            font-size: 0.85rem;
-            color: var(--gray-600);
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            margin-bottom: 0.8rem;
+        .cloud:nth-child(3) {
+            width: 180px;
+            height: 70px;
+            top: 80px;
+            left: -400px;
+            animation-delay: 20s;
         }
 
-        .card-description {
-            font-size: 0.9rem;
-            color: var(--gray-700);
-            margin-bottom: 1.2rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+        @keyframes cloudsMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(100vw + 400px)); }
         }
 
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 0.5rem;
-            margin-top: auto;
+        /* Fumée de cheminée */
+        .chimney-smoke {
+            position: absolute;
+               top: -51px;
+    left: 65%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 0;
+            z-index: 4;
+            pointer-events: none;
         }
 
-        .btn-sm {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.6rem;
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            transition: opacity 0.2s;
+        .smoke {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            opacity: 0;
+            filter: blur(5px);
         }
 
-        .btn-wa { background-color: #25d366; color: white; }
-        .btn-fb { background-color: #1877f2; color: white; }
-        .btn-mail { background-color: var(--gray-600); color: white; }
+        .smoke-1 {
+            animation: smokeRise 6s infinite linear;
+        }
 
-        .btn-sm svg { width: 1.2rem; height: 1.2rem; }
+        .smoke-2 {
+            animation: smokeRise 6s infinite linear 1s;
+        }
 
-        footer {
-            background: var(--white);
-            border-top: 1px solid var(--gray-200);
-            padding: 4rem 1.5rem;
+        .smoke-3 {
+            animation: smokeRise 6s infinite linear 2s;
+        }
+
+        @keyframes smokeRise {
+            0% {
+                transform: translateY(0) scale(0.5);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(-50px) scale(1);
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(-100px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        body.night .smoke {
+            background: rgba(200, 200, 255, 0.9);
+            box-shadow: 0 0 10px rgba(173, 216, 230, 0.5);
+        }
+
+        /* Container principal */
+        .container {
             text-align: center;
-            color: var(--gray-600);
+            max-width: 900px;
+            width: 100%;
+            z-index: 10;
+            position: relative;
         }
 
-        .footer-text {
-            max-width: 600px;
-            margin: 0 auto 1.5rem auto;
-            font-size: 0.95rem;
-            line-height: 1.8;
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            transition: color 3s;
         }
 
-        @media (max-width: 768px) {
-            .hero h2 { font-size: 1.8rem; }
-            .search-bar { grid-template-columns: 1fr; }
-            #map { height: 350px; }
-            .action-buttons { grid-template-columns: 1fr; }
-            .header-content { flex-direction: column; gap: 1rem; text-align: center; }
-            .admin-contacts { flex-wrap: wrap; justify-content: center; gap: 0.75rem; font-size: 0.9rem; }
-            .admin-phone { font-size: 1.1rem; }
+        body.night h1 {
+            color: #f0f0f0;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+        }
+
+        /* Cycle affichage */
+        .cycle-info {
+            margin: 15px auto;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            display: inline-block;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.5s;
+            min-width: 280px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+              position: absolute;
+    left: -7%;
+    TOP: 10%;
+        }
+
+        body.night .cycle-info {
+            background: rgba(0, 0, 0, 0.3);
+            color: #f0f0f0;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cycle-icon {
+            font-size: 1.3rem;
+            margin-right: 8px;
+            animation: iconPulse 2s infinite;
+        }
+
+        @keyframes iconPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Horloge analogique */
+        .analog-clock {
+            width: 120px;
+            height: 120px;
+            border: 8px solid #2c3e50;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto 20px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.2),
+                inset 0 0 20px rgba(0,0,0,0.1);
+            transition: all 0.5s;
+        }
+
+        body.night .analog-clock {
+            background: rgba(52, 73, 94, 0.9);
+            border-color: #ecf0f1;
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.4),
+                inset 0 0 20px rgba(255,255,255,0.1);
+        }
+
+        .clock-center {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #e74c3c;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 4;
+        }
+
+        .hour-hand, .minute-hand, .second-hand {
+            position: absolute;
+            transform-origin: bottom center;
+            border-radius: 4px;
+            left: 50%;
+            top: 50%;
+        }
+
+        .hour-hand {
+            width: 4px;
+            height: 35px;
+            background: #2c3e50;
+            margin-left: -2px;
+            margin-top: -1px;
+            z-index: 1;
+        }
+
+        body.night .hour-hand {
+            background: #ecf0f1;
+        }
+
+        .minute-hand {
+            width: 3px;
+            height: 45px;
+            background: #34495e;
+            margin-left: -1.5px;
+            margin-top: -1px;
+            z-index: 2;
+        }
+
+        body.night .minute-hand {
+            background: #bdc3c7;
+        }
+
+        .second-hand {
+            width: 2px;
+            height: 50px;
+            background: #e74c3c;
+            margin-left: -1px;
+            margin-top: -1px;
+            z-index: 3;
+        }
+
+        .clock-numbers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        body.night .clock-numbers {
+            color: #ecf0f1;
+        }
+
+        .clock-number {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            font-size: 14px;
+        }
+
+        /* Timer digital sous l'horloge */
+        .digital-timer {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            transition: color 3s;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        body.night .digital-timer {
+            color: #ecf0f1;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Maison */
+        .house-container {
+            position: relative;
+            width: 600px;
+            height: 500px;
+            margin: 10px auto;
+        }
+
+        /* Sol */
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to top, #228B22, #32CD32);
+            border-radius: 10px 10px 0 0;
+            z-index: 1;
+            transition: background 3s;
+             WIDTH: 405%!important;
+
+    RIGHT:-120%;
+        HEIGHT: 107PX;
+    TOP: 84%;
+        }
+
+        body.night .ground {
+            background: linear-gradient(to top, #1a5c1a, #228B22);
+        }
+
+        /* Maison */
+        .house {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 320px;
+            z-index: 2;
+        }
+
+        /* Mur en bois */
+        .wall {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 250px;
+            background: 
+                linear-gradient(90deg, 
+                    #8B4513 0px, #D2691E 10px, #8B4513 20px, 
+                    #A0522D 30px, #8B4513 40px, #D2691E 50px,
+                    #8B4513 60px, #A0522D 70px, #8B4513 80px,
+                    #D2691E 90px, #8B4513 100px, #A0522D 110px,
+                    #8B4513 120px, #D2691E 130px, #8B4513 140px,
+                    #A0522D 150px, #8B4513 160px, #D2691E 170px,
+                    #8B4513 180px, #A0522D 190px, #8B4513 200px,
+                    #D2691E 210px, #8B4513 220px, #A0522D 230px,
+                    #8B4513 240px, #D2691E 250px, #8B4513 260px,
+                    #A0522D 270px, #8B4513 280px, #D2691E 290px,
+                    #8B4513 300px, #A0522D 310px, #8B4513 320px,
+                    #D2691E 330px, #8B4513 340px, #A0522D 350px,
+                    #8B4513 360px, #D2691E 370px, #8B4513 380px,
+                    #A0522D 390px, #8B4513 400px
+                );
+            background-size: 400px 100%;
+            border-radius: 15px 15px 0 0;
+            border: 8px solid #5D2906;
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.4),
+                0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Cheminée */
+        .chimney {
+            position: absolute;
+            top: -20px;
+            right: 120px;
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            z-index: 5;
+            border-radius: 8px 8px 0 0;
+            border: 3px solid #5D2906;
+        }
+
+        .chimney::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -5px;
+            right: -5px;
+            height: 15px;
+            background: #A0522D;
+            border-radius: 5px;
+        }
+
+        /* Toit */
+        .roof {
+            position: absolute;
+            bottom: 250px;
+            left: -30px;
+            width: 460px;
+            height: 100px;
+            background: 
+                linear-gradient(45deg, #2c1810, #5a3921, #2c1810);
+            clip-path: polygon(0% 100%, 50% 0%, 100% 100%);
+            border-top: 5px solid #1a0f0a;
+            z-index: 3;
+        }
+
+        .roof::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 30px;
+            background: #8B4513;
+            clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 20% 100%);
+        }
+
+        /* Fenêtres */
+        .window {
+            position: absolute;
+            width: 80px;
+            height: 100px;
+            background-color: #0a1a2a;
+            border: 6px solid #2c3e50;
+            border-radius: 8px;
+            transition: all 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 
+                inset 0 0 15px rgba(0,0,0,0.7),
+                0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Grille de fenêtre */
+        .window::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(to right, transparent 49%, rgba(255,255,255,0.1) 49%, rgba(255,255,255,0.1) 51%, transparent 51%),
+                linear-gradient(to bottom, transparent 49%, rgba(255,255,255,0.1) 49%, rgba(255,255,255,0.1) 51%, transparent 51%);
+            z-index: 2;
+        }
+
+        .left-window {
+            top: 60px;
+            left: 70px;
+        }
+
+        .right-window {
+            top: 60px;
+            right: 70px;
+        }
+
+        /* Effet lumière intérieure */
+        .window-light {
+            position: absolute;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255,223,0,0.9) 0%, rgba(255,140,0,0.7) 30%, transparent 70%);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 1.5s, height 1.5s;
+            z-index: 1;
+        }
+
+        /* Fenêtre allumée */
+        .window.on {
+            background-color: #1a2a3a;
+            border-color: #f39c12;
+            box-shadow: 
+                inset 0 0 30px rgba(255,195,0,0.5),
+                0 0 30px rgba(255,165,0,0.6),
+                0 0 60px rgba(255,140,0,0.3);
+        }
+
+        .window.on .window-light {
+            width: 200px;
+            height: 200px;
+            animation: lightFlicker 2s infinite alternate;
+        }
+
+        @keyframes lightFlicker {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 1; }
+        }
+
+        /* Porte */
+        .door {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 130px;
+            background: linear-gradient(45deg, #5D2906, #8B4513, #5D2906);
+            border: 5px solid #3D1B06;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.5),
+                0 5px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: all 1s ease;
+        }
+
+        .door-knob {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            background: radial-gradient(circle, #FFD700, #B8860B);
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(255,215,0,0.7);
+        }
+
+        .door.on {
+            box-shadow: 
+                inset 0 0 30px rgba(255,195,0,0.4),
+                0 0 20px rgba(255,165,0,0.5);
+        }
+
+        /* Vitre de porte */
+        .door-window {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 35px;
+            background-color: #0a1a2a;
+            border: 2px solid #2c3e50;
+            border-radius: 3px;
+            transition: all 1s;
+        }
+
+        .door.on .door-window {
+            background-color: #FFA500;
+            box-shadow: 
+                inset 0 0 10px rgba(255,255,0,0.7),
+                0 0 15px rgba(255,165,0,0.8);
+        }
+
+        /* Effet de lumière sur le sol */
+        .light-effect {
+            position: absolute;
+            bottom: 80px;
+            width: 100px;
+            height: 30px;
+            background: radial-gradient(ellipse, rgba(255,165,0,0.4), transparent 70%);
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 1.5s;
+            z-index: 1;
+        }
+
+        .window.on ~ .light-effect {
+            opacity: 0.7;
+        }
+
+        .left-window ~ .light-effect {
+            left: 80px;
+        }
+
+        .right-window ~ .light-effect {
+            right: 80px;
+        }
+
+        /* État des lumières */
+        .lights-status {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .light-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        body.night .light-indicator {
+            background: rgba(0, 0, 0, 0.2);
+            color: #f0f0f0;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+            box-shadow: 0 0 8px #e74c3c;
+            transition: all 0.5s;
+        }
+
+        .indicator-dot.on {
+            background: #2ecc71;
+            box-shadow: 0 0 12px #2ecc71;
+            animation: dotPulse 2s infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Instruction */
+        .instruction {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            font-style: italic;
+            transition: color 3s;
+        }
+
+        body.night .instruction {
+            color: #bdc3c7;
+        }
+
+        /* Responsive */
+        @media (max-width: 650px) {
+            .house-container {
+                width: 100%;
+                height: 400px;
+                transform: scale(0.9);
+            }
+            
+            .house {
+                width: 300px;
+                height: 250px;
+            }
+            
+            .wall {
+                height: 180px;
+            }
+            
+            .roof {
+                width: 340px;
+                height: 80px;
+                bottom: 180px;
+                left: -20px;
+            }
+            
+            .window {
+                width: 60px;
+                height: 80px;
+            }
+            
+            .left-window {
+                left: 40px;
+            }
+            
+            .right-window {
+                right: 40px;
+            }
+
+            .sun, .moon {
+                width: 60px;
+                height: 60px;
+                right: 30px;
+                top: 30px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .analog-clock {
+                width: 100px;
+                height: 100px;
+            }
+
+            .digital-timer {
+                font-size: 1.5rem;
+            }
+
+            .cycle-info {
+                min-width: 250px;
+                font-size: 1rem;
+                padding: 10px 15px;
+            }
+
+            .lights-status {
+                gap: 10px;
+            }
+
+            .light-indicator {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-height: 800px) {
+            .container {
+                transform: scale(0.9);
+            }
         }
     </style>
 </head>
 <body>
-
-    <header>
-        <div class="header-content">
-            <div class="logo-group">
-                <a href="#" class="logo">Toko<span>.mg</span></a>
-                <span class="header-tagline">Ampiditra ny toko-nao ho hita sy hampitombo ny mpanjifa !</span>
-            </div>
-            
-            <div class="admin-contacts">
-                <a href="tel:0385615374" class="admin-link admin-phone" title="Antsoy ny Admin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    038 56 153 74
-                </a>
-                <a href="https://wa.me/261385615374" class="admin-link" target="_blank" title="WhatsApp Admin">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-2.32 0-4.518.892-6.193 2.512-3.418 3.3-3.418 8.644 0 11.944 1.538 1.486 3.518 2.303 5.587 2.303.58 0 1.146-.074 1.69-.22l.378-.09 2.529.662-.643-2.465.101-.164A8.13 8.13 0 0017.3 14.28c0-2.102-.803-4.077-2.26-5.484a8.6 8.6 0 00-3.009-2.624zm4.424 10.64c-.229.644-1.354 1.288-1.854 1.41-.5.122-.98.244-2.854-.488-2.247-.878-3.684-3.134-3.809-3.295-.125-.162-.939-1.244-.939-2.383 0-1.139.593-1.698.812-1.922.219-.224.469-.284.625-.284.156 0 .312.006.437.012.125.006.281-.024.437.34.156.366.531 1.28.578 1.372.047.091.078.198.016.32-.063.121-.094.195-.188.305-.094.11-.197.244-.281.325-.101.095-.205.197-.089.395.116.198.514.846 1.103 1.366.758.67 1.397.877 1.595.976.198.1.312.083.427-.052.114-.135.489-.57.62-.765.13-.195.26-.165.437-.1.177.065 1.12.53 1.313.626.193.096.322.144.369.224.047.08.047.462-.182 1.107z"/></svg>
-                    WhatsApp
-                </a>
-                <a href="mailto:razafindratsirak@gmail.com" class="admin-link" title="Email Admin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    Email
-                </a>
-            </div>
-
-            <div class="results-count" id="count-top"></div>
-        </div>
-    </header>
-
-    <section class="hero">
-        <h2>Mitady mpivarotra azo itokisana akaiky anao</h2>
-        <p>Toko.mg – Ampiditra ny toko-nao ho hita sy hampitombo ny mpanjifa !</p>
-    </section>
+    <!-- Soleil et Lune -->
+    <div class="sun"></div>
+    <div class="moon"></div>
+    
+    <!-- Nuages -->
+    <div class="clouds">
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+    </div>
+    
+    <!-- Étoiles -->
+    <div class="stars" id="stars"></div>
 
     <div class="container">
-        <div class="search-bar">
-            <div class="filter-group">
-                <label for="district-filter">Toerana (Quartier)</label>
-                <select id="district-filter">
-                    <option value="all">Toerana rehetra</option>
-                    <option value="Itaosy">Itaosy</option>
-                    <option value="Soarano">Soarano</option>
-                    <option value="Mahamasina">Mahamasina</option>
-                    <option value="Anosy">Anosy</option>
-                    <option value="Antanimena">Antanimena</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="type-filter">Karazany (Service)</label>
-                <select id="type-filter">
-                    <option value="all">Karazany rehetra</option>
-                    <option value="épicerie">Épicerie</option>
-                    <option value="coiffeur">Coiffeur</option>
-                    <option value="mécanicien">Mécanicien</option>
-                    <option value="tailleur">Tailleur</option>
-                    <option value="pharmacie">Pharmacie</option>
-                </select>
+        <h1>🌲 Maison en Bois - Cycle Automatique</h1>
+        
+        <div class="cycle-info" id="cycle-info">
+            <span class="cycle-icon" id="cycle-icon">☀️</span>
+            <span id="cycle-text">JOUR - Lumières éteintes</span>
+        </div>
+        
+        <!-- Horloge analogique -->
+        <div class="analog-clock" id="analog-clock">
+            <div class="clock-center"></div>
+            <div class="hour-hand" id="hour-hand"></div>
+            <div class="minute-hand" id="minute-hand"></div>
+            <div class="second-hand" id="second-hand"></div>
+            <div class="clock-numbers">
+                <div class="clock-number" style="top: 10px; left: 50px;">12</div>
+                <div class="clock-number" style="top: 50px; right: 15px;">3</div>
+                <div class="clock-number" style="bottom: 10px; left: 50px;">6</div>
+                <div class="clock-number" style="top: 50px; left: 15px;">9</div>
             </div>
         </div>
-
-        <div class="info-box">
-            “Tsy mila fahalalam-baovao ianao – amboarinao fotsiny ny WhatsApp-nao, ny facebook-nao.”
+        
+        <!-- Timer digital -->
+        <div class="digital-timer" id="digital-timer">01:00</div>
+        
+        <div class="house-container">
+        <button class="neon-button">Voir nos produits</button>
+            <!-- Sol -->
+            <div class="ground"></div>
+            
+            <!-- Maison -->
+            <div class="house">
+                <!-- Cheminée et fumée -->
+                <div class="chimney-smoke" id="chimney-smoke">
+                    <div class="smoke smoke-1"></div>
+                    <div class="smoke smoke-2"></div>
+                    <div class="smoke smoke-3"></div>
+                </div>
+                <div class="chimney"></div>
+                
+                <!-- Toit -->
+                <div class="roof"></div>
+                
+                <!-- Mur -->
+                <div class="wall">
+                    <!-- Fenêtre gauche -->
+                    <div class="window left-window" id="left-window">
+                        <div class="window-light"></div>
+                        <!-- Effet lumière sur le sol -->
+                        <div class="light-effect"></div>
+                    </div>
+                    
+                    <!-- Fenêtre droite -->
+                    <div class="window right-window" id="right-window">
+                        <div class="window-light"></div>
+                        <div class="light-effect"></div>
+                    </div>
+                    
+                    <!-- Porte -->
+                    <div class="door" id="door">
+                        <div class="door-window"></div>
+                        <div class="door-knob"></div>
+                    </div>
+                </div>
+            </div>
         </div>
+     
 
-        <div id="map"></div>
 
-        <div class="section-header">
-            <h3>Mpivarotra misy izao</h3>
-            <span class="results-count" id="count-bottom"></span>
+
+
+        
+        <!-- État des lumières -->
+        <div class="lights-status">
+            <div class="light-indicator">
+                <div class="indicator-dot" id="indicator-left"></div>
+                <span>Fenêtre gauche</span>
+            </div>
+            <div class="light-indicator">
+                <div class="indicator-dot" id="indicator-right"></div>
+                <span>Fenêtre droite</span>
+            </div>
+            <div class="light-indicator">
+                <div class="indicator-dot" id="indicator-door"></div>
+                <span>Porte</span>
+            </div>
         </div>
-
-        <div class="listings-grid" id="listings">
-            <!-- Listings will be injected here -->
+        
+        <div class="instruction">
+            Cycle automatique toutes les 60 secondes • Cliquez sur les fenêtres/porte pour contrôler manuellement
         </div>
     </div>
-
-    <footer>
-        <div class="footer-text">
-            <p><strong>Toko.mg – Ampiditra ny toko-nao ho hita sy hampitombo ny mpanjifa !</strong></p>
-            <p>“Natao ho an’ny Malagasy.”</p>
+<div class="billboard-container">
+        <div class="screen">
+            <div class="title">Achat Immobilier</div>
+            <div class="offer">Achat -50% réduction</div>
         </div>
-        <p>&copy; 2026 Toko.mg • Vita ho an'i Madagasikara</p>
-    </footer>
+        <div class="post"></div>
+    </div>
+<div class="caddy-container">
+        <div class="caddy-handle"></div>
+        <div class="caddy-basket"></div>
+        <div class="wheel wheel-back"></div>
+        <div class="wheel wheel-front"></div>
+    </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
-        // Data with FB and Email
-        const businesses = [
-            {
-                name: "Epicerie Faniry",
-                district: "Itaosy",
-                type: "épicerie",
-                description: "Vente de produits de première nécessité, fruits frais et légumes de saison.",
-                lat: -18.9100,
-                lng: 47.4800,
-                phone: "261340011122",
-                facebook: "faniry.epicerie",
-                email: "contact@faniry.mg",
-                image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80"
-            },
-            {
-                name: "Coiffure Elite",
-                district: "Soarano",
-                type: "coiffeur",
-                description: "Spécialiste de la coiffure mixte et soins esthétiques.",
-                lat: -18.9050,
-                lng: 47.5250,
-                phone: "261340033344",
-                facebook: "elite.coiffure.tana",
-                email: "elite@gmail.com",
-                image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=600&q=80"
-            },
-            {
-                name: "Garage Modern",
-                district: "Mahamasina",
-                type: "mécanicien",
-                description: "Diagnostic électronique, réparation mécanique et entretien périodique.",
-                lat: -18.9180,
-                lng: 47.5260,
-                phone: "261340055566",
-                facebook: "garage.modern.mg",
-                email: "garage@modern.mg",
-                image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=600&q=80"
-            },
-            {
-                name: "Pharmacie Tanà",
-                district: "Anosy",
-                type: "pharmacie",
-                description: "Votre partenaire santé. Médicaments et produits d'hygiène.",
-                lat: -18.9140,
-                lng: 47.5180,
-                phone: "261340077788",
-                facebook: "pharmacie.tana",
-                email: "tana@pharmacie.mg",
-                image: ""
-            },
-            {
-                name: "Tailleur Chic",
-                district: "Antanimena",
-                type: "tailleur",
-                description: "Maître tailleur spécialisé en costumes sur mesure.",
-                lat: -18.9000,
-                lng: 47.5230,
-                phone: "261340099900",
-                facebook: "tailleur.chic.mg",
-                email: "chic@tailleur.mg",
-                image: "https://images.unsplash.com/photo-1594932224828-99e026899b17?auto=format&fit=crop&w=600&q=80"
+        // Créer les étoiles
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 150; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.width = Math.random() * 3 + 1 + 'px';
+            star.style.height = star.style.width;
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Éléments DOM
+        const body = document.body;
+        const leftWindow = document.getElementById('left-window');
+        const rightWindow = document.getElementById('right-window');
+        const door = document.getElementById('door');
+        const cycleText = document.getElementById('cycle-text');
+        const cycleIcon = document.getElementById('cycle-icon');
+        const cycleInfo = document.getElementById('cycle-info');
+        const digitalTimer = document.getElementById('digital-timer');
+        const hourHand = document.getElementById('hour-hand');
+        const minuteHand = document.getElementById('minute-hand');
+        const secondHand = document.getElementById('second-hand');
+        const chimneySmoke = document.getElementById('chimney-smoke');
+        
+        // Indicateurs de lumière
+        const indicatorLeft = document.getElementById('indicator-left');
+        const indicatorRight = document.getElementById('indicator-right');
+        const indicatorDoor = document.getElementById('indicator-door');
+
+        // État du cycle
+        let isDay = true;
+        let timeLeft = 60; // 60 secondes par phase
+        let timerInterval;
+        let isCycling = false;
+        let currentLightIndex = 0;
+        let smokeInterval;
+
+        // Ordre d'allumage/extinction des lumières
+        const lightOrder = ['leftWindow', 'rightWindow', 'door'];
+        const lights = {
+            leftWindow: { element: leftWindow, indicator: indicatorLeft },
+            rightWindow: { element: rightWindow, indicator: indicatorRight },
+            door: { element: door, indicator: indicatorDoor }
+        };
+
+        // Mettre à jour l'horloge analogique
+        function updateAnalogClock(seconds) {
+            const totalSeconds = 60 - seconds; // Inverse pour que l'aiguille bouge
+            const secondDeg = (totalSeconds / 60) * 360;
+            const minuteDeg = (totalSeconds / 3600) * 360;
+            const hourDeg = (totalSeconds / 43200) * 360;
+            
+            secondHand.style.transform = `translate(-50%, -100%) rotate(${secondDeg}deg)`;
+            minuteHand.style.transform = `translate(-50%, -100%) rotate(${minuteDeg}deg)`;
+            hourHand.style.transform = `translate(-50%, -100%) rotate(${hourDeg}deg)`;
+        }
+
+        // Mettre à jour le timer digital
+        function updateDigitalTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            digitalTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Animation de la couleur
+            if (timeLeft <= 10) {
+                digitalTimer.style.color = '#e74c3c';
+                digitalTimer.style.animation = 'pulse 0.5s infinite';
+            } else {
+                digitalTimer.style.color = '';
+                digitalTimer.style.animation = '';
             }
-        ];
+        }
 
-        // Map
-        const map = L.map('map', { scrollWheelZoom: false }).setView([-18.9137, 47.5361], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+        // Activer/désactiver la fumée de cheminée
+        function toggleSmoke(enable) {
+            if (enable) {
+                chimneySmoke.style.height = '100px';
+                if (!smokeInterval) {
+                    smokeInterval = setInterval(() => {
+                        // La fumée est déjà animée via CSS
+                    }, 6000);
+                }
+            } else {
+                chimneySmoke.style.height = '0';
+                if (smokeInterval) {
+                    clearInterval(smokeInterval);
+                    smokeInterval = null;
+                }
+            }
+        }
 
-        let markers = [];
-        const listingsContainer = document.getElementById('listings');
-        const countTop = document.getElementById('count-top');
-        const countBottom = document.getElementById('count-bottom');
+        // Fonction pour démarrer le cycle
+        function startCycle() {
+            if (isCycling) return;
+            isCycling = true;
+            startTimer();
+        }
 
-        function render(filtered) {
-            listingsContainer.innerHTML = '';
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-
-            const countText = `${filtered.length} toko hita`;
-            countTop.textContent = countText;
-            countBottom.textContent = countText;
-
-            filtered.forEach(biz => {
-                const marker = L.marker([biz.lat, biz.lng]).addTo(map);
-                marker.bindPopup(`<strong>${biz.name}</strong><br><a href="https://wa.me/${biz.phone}" target="_blank">WhatsApp Chat</a>`);
-                markers.push(marker);
-
-                const card = document.createElement('div');
-                card.className = 'card';
+        // Fonction du timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
                 
-                const imgSection = biz.image 
-                    ? `<div class="card-image-container"><span class="card-badge">${biz.type}</span><img src="${biz.image}" class="card-image"></div>`
-                    : `<div style="padding-top: 1.5rem; padding-left: 1.5rem"><span class="card-badge" style="position: static">${biz.type}</span></div>`;
+                // Mettre à jour les horloges
+                updateAnalogClock(timeLeft);
+                updateDigitalTimer();
+                
+                if (timeLeft <= 0) {
+                    if (isDay) {
+                        // Transition vers la nuit
+                        startNightTransition();
+                    } else {
+                        // Transition vers le jour
+                        startDayTransition();
+                    }
+                }
+            }, 1000);
+        }
 
-                card.innerHTML = `
-                    ${imgSection}
-                    <div class="card-content">
-                        <h3 class="card-title">${biz.name}</h3>
-                        <div class="card-location">📍 ${biz.district}</div>
-                        <p class="card-description">${biz.description}</p>
-                        <div class="action-buttons">
-                            <a href="https://wa.me/${biz.phone}" class="btn-sm btn-wa" target="_blank" title="WhatsApp">
-                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-2.32 0-4.518.892-6.193 2.512-3.418 3.3-3.418 8.644 0 11.944 1.538 1.486 3.518 2.303 5.587 2.303.58 0 1.146-.074 1.69-.22l.378-.09 2.529.662-.643-2.465.101-.164A8.13 8.13 0 0017.3 14.28c0-2.102-.803-4.077-2.26-5.484a8.6 8.6 0 00-3.009-2.624zm4.424 10.64c-.229.644-1.354 1.288-1.854 1.41-.5.122-.98.244-2.854-.488-2.247-.878-3.684-3.134-3.809-3.295-.125-.162-.939-1.244-.939-2.383 0-1.139.593-1.698.812-1.922.219-.224.469-.284.625-.284.156 0 .312.006.437.012.125.006.281-.024.437.34.156.366.531 1.28.578 1.372.047.091.078.198.016.32-.063.121-.094.195-.188.305-.094.11-.197.244-.281.325-.101.095-.205.197-.089.395.116.198.514.846 1.103 1.366.758.67 1.397.877 1.595.976.198.1.312.083.427-.052.114-.135.489-.57.62-.765.13-.195.26-.165.437-.1.177.065 1.12.53 1.313.626.193.096.322.144.369.224.047.08.047.462-.182 1.107z"/></svg>
-                            </a>
-                            <a href="https://facebook.com/${biz.facebook}" class="btn-sm btn-fb" target="_blank" title="Facebook">
-                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                            </a>
-                            <a href="mailto:${biz.email}" class="btn-sm btn-mail" title="Email">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                            </a>
-                        </div>
-                    </div>
-                `;
-                listingsContainer.appendChild(card);
+        // Transition vers la nuit (allumage progressif)
+        function startNightTransition() {
+            isDay = false;
+            body.classList.add('night');
+            cycleText.textContent = 'NUIT - Allumage progressif...';
+            cycleIcon.textContent = '🌙';
+            cycleInfo.style.background = 'rgba(52, 152, 219, 0.3)';
+            
+            // Activer la fumée de cheminée la nuit
+            toggleSmoke(true);
+            
+            // Réinitialiser le timer
+            timeLeft = 60;
+            updateDigitalTimer();
+            updateAnalogClock(timeLeft);
+            
+            // Allumer les lumières une par une avec délai
+            lightOrder.forEach((lightName, index) => {
+                setTimeout(() => {
+                    toggleLight(lightName, true);
+                    
+                    // Si c'est la dernière lumière, mettre à jour le texte
+                    if (index === lightOrder.length - 1) {
+                        setTimeout(() => {
+                            cycleText.textContent = 'NUIT - Toutes les lumières allumées';
+                        }, 1000);
+                    }
+                }, index * 1000); // 1 seconde entre chaque lumière
             });
+        }
 
-            if (markers.length > 0) {
-                const group = new L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.1));
+        // Transition vers le jour (extinction progressive)
+        function startDayTransition() {
+            isDay = true;
+            body.classList.remove('night');
+            cycleText.textContent = 'JOUR - Extinction progressive...';
+            cycleIcon.textContent = '☀️';
+            cycleInfo.style.background = 'rgba(255, 193, 7, 0.3)';
+            
+            // Désactiver la fumée de cheminée le jour
+            toggleSmoke(false);
+            
+            // Réinitialiser le timer
+            timeLeft = 60;
+            updateDigitalTimer();
+            updateAnalogClock(timeLeft);
+            
+            // Éteindre les lumières une par une avec délai
+            lightOrder.forEach((lightName, index) => {
+                setTimeout(() => {
+                    toggleLight(lightName, false);
+                    
+                    // Si c'est la dernière lumière, mettre à jour le texte
+                    if (index === lightOrder.length - 1) {
+                        setTimeout(() => {
+                            cycleText.textContent = 'JOUR - Toutes les lumières éteintes';
+                        }, 1000);
+                    }
+                }, index * 1000); // 1 seconde entre chaque lumière
+            });
+        }
+
+        // Basculer une lumière spécifique
+        function toggleLight(lightName, turnOn) {
+            const light = lights[lightName];
+            if (!light) return;
+            
+            const shouldTurnOn = turnOn !== undefined ? turnOn : !light.element.classList.contains('on');
+            
+            if (shouldTurnOn) {
+                light.element.classList.add('on');
+                light.indicator.classList.add('on');
+            } else {
+                light.element.classList.remove('on');
+                light.indicator.classList.remove('on');
+            }
+            
+            // Vibration pour feedback tactile
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
             }
         }
 
-        const districtFilter = document.getElementById('district-filter');
-        const typeFilter = document.getElementById('type-filter');
-        function filter() {
-            const d = districtFilter.value;
-            const t = typeFilter.value;
-            const filtered = businesses.filter(b => (d === 'all' || b.district === d) && (t === 'all' || b.type === t));
-            render(filtered);
+        // Clic direct sur les fenêtres/porte (contrôle manuel)
+        leftWindow.addEventListener('click', () => toggleLight('leftWindow'));
+        rightWindow.addEventListener('click', () => toggleLight('rightWindow'));
+        door.addEventListener('click', () => toggleLight('door'));
+
+        // Initialiser avec les lumières éteintes
+        function initLights() {
+            lightOrder.forEach(lightName => {
+                toggleLight(lightName, false);
+            });
+            cycleText.textContent = 'JOUR - Lumières éteintes';
+            cycleIcon.textContent = '☀️';
+            toggleSmoke(false);
         }
 
-        districtFilter.addEventListener('change', filter);
-        typeFilter.addEventListener('change', filter);
-        render(businesses);
+        // Effet d'apparition progressive
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 1s';
+            
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+                initLights();
+                updateDigitalTimer();
+                updateAnalogClock(timeLeft);
+                startCycle();
+            }, 100);
+        });
+
+        // Animation du soleil au chargement
+        setTimeout(() => {
+            document.querySelector('.sun').style.animation = 'sunRise 2s ease-out';
+        }, 500);
+
+        // Empêcher le scroll avec la roue de la souris
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Empêcher le scroll avec le toucher
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // Instructions console
+        console.log('🌲 Maison en Bois - Cycle Automatique 🌲');
+        console.log('Cycle automatique toutes les 60 secondes');
+        console.log('• Jour → Nuit : Allumage progressif des lumières');
+        console.log('• Nuit → Jour : Extinction progressive des lumières');
+        console.log('• Horloge analogique et digitale synchronisées');
+        console.log('• Fumée de cheminée la nuit uniquement');
+        console.log('• Pas de scroll - Tout est visible à l\'écran');
     </script>
 </body>
 </html>

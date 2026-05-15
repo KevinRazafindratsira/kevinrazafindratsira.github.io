@@ -6,6 +6,9 @@
 <title>MaLivraison MG 📡 Mode GPS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Leaflet.js — carte OpenStreetMap gratuite, légère (42KB) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -380,6 +383,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
           <div class="step-item" id="step-livre"><div class="step-circle">🏠</div><div class="step-txt">Livré !</div></div>
         </div>
 
+        <!-- ── CARTE OPENSTREETMAP ── -->
+        <div id="carte-loading" class="carte-loading">🗺️ Chargement de la carte…</div>
+        <div id="carte-client" class="hidden"></div>
+
         <div class="progress-header">
           <span class="progress-label-txt">Rapprochement</span>
           <span class="progress-pct" id="client-pct">0%</span>
@@ -474,6 +481,14 @@ let dernierePosEnvoyeeClient  = null;  // dernière pos envoyée (filtre)
 let accuracyLivreur        = 999;      // précision GPS du livreur (mètres)
 let accuracyClient         = 999;      // précision GPS du client (mètres)
 let distTotaleFixee        = false;   // empêcher la race condition
+
+// ── Variables carte Leaflet ──
+let carteLeaflet       = null;   // instance de la carte
+let marqueurLivreur    = null;   // marqueur 🛵 sur la carte
+let marqueurClient     = null;   // marqueur 🏠 sur la carte
+let ligneLivreurClient = null;   // ligne entre les deux
+let cercleAccLivreur   = null;   // cercle précision GPS livreur
+let carteInitialisee   = false;  // carte créée ?
 let compteurArrivee        = 0;        // nb lectures consécutives à 99%+
 const SEUIL_ARRIVEE        = 5;        // exiger 5 lectures consécutives avant "livre"
 
@@ -1037,6 +1052,109 @@ function activerGPSClient(code) {
   );
 }
 
+// ================================================================
+// CARTE LEAFLET — OpenStreetMap (gratuit, sans clé API)
+// ================================================================
+
+// Icônes personnalisées légères (pas d'images externes)
+function creerIcone(emoji, couleur) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="background:' + couleur + ';border:3px solid white;border-radius:50%;'
+        + 'width:34px;height:34px;display:flex;align-items:center;justify-content:center;'
+        + 'font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">' + emoji + '</div>',
+    iconSize:   [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor:[0, -17]
+  });
+}
+
+function initialiserCarte(latLiv, lngLiv, latCli, lngCli) {
+  // Afficher la carte, cacher le loading
+  document.getElementById('carte-loading').classList.add('hidden');
+  document.getElementById('carte-client').classList.remove('hidden');
+
+  const centre = [(latLiv + latCli) / 2, (lngLiv + lngCli) / 2];
+
+  // Créer la carte Leaflet
+  carteLeaflet = L.map('carte-client', {
+    center:          centre,
+    zoom:            16,
+    zoomControl:     true,
+    attributionControl: false  // ← enlève le "Leaflet | OSM" pour gagner de la place
+  });
+
+  // Tuiles OpenStreetMap — gratuites, légères, mises en cache par le navigateur
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:     19,
+    attribution: '© OpenStreetMap'
+  }).addTo(carteLeaflet);
+
+  // Marqueur livreur 🛵
+  marqueurLivreur = L.marker([latLiv, lngLiv], {
+    icon:      creerIcone('🛵', '#16A369'),
+    zIndexOffset: 100
+  }).addTo(carteLeaflet).bindPopup('🛵 Livreur');
+
+  // Marqueur client 🏠
+  marqueurClient = L.marker([latCli, lngCli], {
+    icon:      creerIcone('🏠', '#3B82F6'),
+    zIndexOffset: 50
+  }).addTo(carteLeaflet).bindPopup('🏠 Votre position');
+
+  // Ligne entre les deux
+  ligneLivreurClient = L.polyline(
+    [[latLiv, lngLiv], [latCli, lngCli]],
+    { color: '#16A369', weight: 3, dashArray: '6,8', opacity: 0.7 }
+  ).addTo(carteLeaflet);
+
+  // Ajuster le zoom pour voir les deux marqueurs
+  const bounds = L.latLngBounds([[latLiv,lngLiv],[latCli,lngCli]]);
+  carteLeaflet.fitBounds(bounds, { padding: [40, 40] });
+
+  carteInitialisee = true;
+}
+
+function mettreAJourCarte(latLiv, lngLiv, latCli, lngCli, accLiv) {
+  if (!carteInitialisee) {
+    initialiserCarte(latLiv, lngLiv, latCli, lngCli);
+    return;
+  }
+
+  // Déplacer marqueur livreur en douceur
+  marqueurLivreur.setLatLng([latLiv, lngLiv]);
+
+  // Mettre à jour la ligne
+  ligneLivreurClient.setLatLngs([[latLiv,lngLiv],[latCli,lngCli]]);
+
+  // Cercle de précision GPS livreur (optionnel, léger)
+  if (accLiv && accLiv < 100) {
+    if (cercleAccLivreur) {
+      cercleAccLivreur.setLatLng([latLiv, lngLiv]).setRadius(accLiv);
+    } else {
+      cercleAccLivreur = L.circle([latLiv, lngLiv], {
+        radius:      accLiv,
+        color:       '#16A369',
+        fillColor:   '#16A369',
+        fillOpacity: 0.08,
+        weight:      1
+      }).addTo(carteLeaflet);
+    }
+  }
+
+  // Recentrer doucement pour garder les deux marqueurs visibles
+  const bounds = L.latLngBounds([[latLiv,lngLiv],[latCli,lngCli]]);
+  carteLeaflet.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 0.8 });
+}
+
+function detruireCarte() {
+  if (carteLeaflet) { carteLeaflet.remove(); carteLeaflet = null; }
+  marqueurLivreur = marqueurClient = ligneLivreurClient = cercleAccLivreur = null;
+  carteInitialisee = false;
+  document.getElementById('carte-loading').classList.remove('hidden');
+  document.getElementById('carte-client').classList.add('hidden');
+}
+
 function majUIClient(data) {
   const pct   = data.progression || 0;
   const reste = parseFloat(data.distReste) || 0;
@@ -1054,8 +1172,17 @@ function majUIClient(data) {
 
   document.getElementById('client-pct').textContent        = pct + '%';
   document.getElementById('client-fill').style.width       = Math.max(2, pct) + '%';
-  document.getElementById('client-dist-reste').textContent = distAffichee;  // ✅ corrigé
-  document.getElementById('client-eta').textContent        = etaAff;         // ✅ UX améliorée
+  document.getElementById('client-dist-reste').textContent = distAffichee;
+  document.getElementById('client-eta').textContent        = etaAff;
+
+  // ✅ CARTE — mettre à jour si les deux positions sont disponibles
+  if (data.position && data.positionClient) {
+    mettreAJourCarte(
+      data.position.lat,      data.position.lng,
+      data.positionClient.lat, data.positionClient.lng,
+      data.accuracy || 50
+    );
+  }
 
   // ✅ Afficher "Livré" si statut=livre OU progression=100
   if (livre || pct >= 100) {
@@ -1075,6 +1202,7 @@ function majUIClient(data) {
 function quitterSuivi() {
   if (codeActuel && clientListener) { db.ref('livraisons/' + codeActuel).off('value', clientListener); clientListener = null; }
   if (clientWatchId) { navigator.geolocation.clearWatch(clientWatchId); clientWatchId = null; }
+  detruireCarte(); // ✅ Libérer la mémoire de la carte
   document.getElementById('client-code-form').classList.remove('hidden');
   document.getElementById('client-tracking').classList.add('hidden');
   document.getElementById('client-code-input').value = '';

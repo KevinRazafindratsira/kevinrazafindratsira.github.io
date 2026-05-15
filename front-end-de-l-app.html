@@ -1,1 +1,1223 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MaLivraison MG 📡 Mode GPS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Leaflet.js — carte OpenStreetMap gratuite, légère (42KB) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:       #16A369;
+  --green-dark:  #0D7A4F;
+  --green-light: #EDFAF3;
+  --green-mid:   #C6F0DC;
+  --amber-light: #FEF3C7;
+  --red:         #EF4444;
+  --red-light:   #FEE2E2;
+  --blue:        #3B82F6;
+  --blue-light:  #EFF6FF;
+  --bg:          #F2F4F0;
+  --surface:     #FFFFFF;
+  --border:      #E4E8E1;
+  --text:        #1A1F16;
+  --text-2:      #5A6354;
+  --text-3:      #9CA894;
+  --radius-sm:   8px;
+  --radius-md:   14px;
+  --radius-lg:   20px;
+  --shadow:      0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+}
+
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; max-width: 480px; margin: 0 auto; }
+.page { display: none; flex-direction: column; min-height: 100vh; }
+.page.active { display: flex; }
+
+.header { background: var(--surface); padding: 18px 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 10; }
+.back-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; flex-shrink: 0; }
+.back-btn:active { background: var(--border); }
+.header-text h1 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; }
+.header-text p  { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+.header-logo { width: 38px; height: 38px; background: var(--blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+
+.content { padding: 20px 16px; flex: 1; }
+.card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 20px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.card-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 14px; }
+
+.hero { background: linear-gradient(135deg, #1E40AF, var(--blue)); border-radius: var(--radius-lg); padding: 28px 20px; margin-bottom: 14px; color: white; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+.hero-emoji { font-size: 36px; margin-bottom: 10px; display: block; }
+.hero h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; line-height: 1.2; }
+.hero p { font-size: 13px; opacity: 0.8; margin-top: 6px; }
+
+.role-btn { width: 100%; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-md); padding: 18px 16px; display: flex; align-items: center; gap: 16px; cursor: pointer; margin-bottom: 10px; transition: border-color 0.18s, background 0.18s, transform 0.1s; text-align: left; box-shadow: var(--shadow); }
+.role-btn:active { transform: scale(0.98); }
+.role-btn:hover  { border-color: var(--green); background: var(--green-light); }
+.role-btn.blue:hover { border-color: var(--blue); background: var(--blue-light); }
+.role-icon-wrap { width: 48px; height: 48px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.bg-green { background: var(--green-light); }
+.bg-blue  { background: var(--blue-light); }
+.role-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.role-sub   { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+.role-arrow { margin-left: auto; font-size: 18px; color: var(--text-3); }
+
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+.form-input { width: 100%; padding: 13px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; background: var(--bg); color: var(--text); transition: border-color 0.18s, background 0.18s; }
+.form-input:focus { border-color: var(--green); background: var(--surface); }
+.form-input::placeholder { color: var(--text-3); }
+.form-input.code-input { font-size: 28px; text-align: center; letter-spacing: 10px; font-family: 'Syne', sans-serif; font-weight: 700; }
+
+.btn { width: 100%; padding: 15px; border-radius: var(--radius-md); border: none; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.18s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn:active    { transform: scale(0.98); }
+.btn-primary   { background: var(--green); color: white; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-secondary { background: var(--bg); color: var(--text-2); border: 1px solid var(--border); margin-top: 10px; }
+.btn-danger    { background: var(--red-light); color: var(--red); border: 1px solid #FECACA; margin-top: 10px; }
+.btn:disabled  { opacity: 0.5; cursor: not-allowed; }
+
+.code-box { background: linear-gradient(135deg, #1E40AF, var(--blue)); border-radius: var(--radius-lg); padding: 24px 20px; text-align: center; margin-bottom: 14px; color: white; position: relative; overflow: hidden; }
+.code-box::before { content: ''; position: absolute; top: -20px; left: -20px; width: 100px; height: 100px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+.code-tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.75; margin-bottom: 10px; }
+.code-value { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; letter-spacing: 10px; margin-bottom: 6px; }
+.code-hint { font-size: 12px; opacity: 0.7; }
+
+.progress-bg { height: 16px; background: var(--green-light); border-radius: 20px; position: relative; overflow: visible; margin-bottom: 8px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--green), #22C55E); border-radius: 20px; transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; min-width: 16px; }
+.progress-rider { position: absolute; right: -12px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--surface); border: 3px solid var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; box-shadow: 0 2px 8px rgba(22,163,105,0.3); }
+.progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.progress-label-txt { font-size: 13px; color: var(--text-2); }
+.progress-pct { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--green-dark); }
+.progress-milestones { display: flex; justify-content: space-between; margin-bottom: 16px; }
+.milestone-txt { font-size: 10px; color: var(--text-3); }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+.stat-card { background: var(--bg); border-radius: var(--radius-sm); padding: 14px 12px; text-align: center; }
+.stat-value { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); }
+.stat-label { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.badge-live { background: var(--blue-light); color: #1E40AF; }
+.badge-done { background: var(--green-mid);  color: var(--green-dark); }
+.pulse { width: 7px; height: 7px; background: var(--blue); border-radius: 50%; animation: pulse 1.8s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+.alert { padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+.alert-error   { background: var(--red-light);   color: #991B1B;         border: 1px solid #FECACA; }
+.alert-info    { background: var(--blue-light);   color: #1E40AF;         border: 1px solid #BFDBFE; }
+.alert-success { background: var(--green-light);  color: var(--green-dark); border: 1px solid var(--green-mid); }
+.alert-warning { background: var(--amber-light);  color: #92400E;         border: 1px solid #FDE68A; }
+
+.steps-wrap { display: flex; align-items: center; margin-bottom: 20px; position: relative; }
+.step-item { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+.step-connector { position: absolute; top: 14px; left: calc(50% + 14px); right: calc(-50% + 14px); height: 2px; background: var(--border); z-index: 0; }
+.step-connector.done { background: var(--green); }
+.step-circle { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; position: relative; z-index: 1; margin-bottom: 5px; transition: all 0.3s; }
+.step-item.done   .step-circle { background: var(--green); border-color: var(--green); color: white; }
+.step-item.active .step-circle { background: var(--surface); border-color: var(--green); border-width: 2.5px; color: var(--green); font-size: 14px; }
+.step-txt { font-size: 9px; color: var(--text-3); text-align: center; font-weight: 500; }
+.step-item.done   .step-txt { color: var(--green-dark); }
+.step-item.active .step-txt { color: var(--green); font-weight: 600; }
+
+.livreur-row { display: flex; align-items: center; gap: 14px; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--blue-light); color: var(--blue); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; flex-shrink: 0; }
+.livreur-name { font-weight: 600; font-size: 15px; }
+.livreur-sub  { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+.finish-banner { background: var(--green); color: white; border-radius: var(--radius-lg); padding: 20px; text-align: center; margin-bottom: 14px; }
+.finish-banner .big-emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+.finish-banner h2 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+.finish-banner p  { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+
+/* Proximité */
+.proximity-wrap { text-align: center; padding: 10px 0 20px; }
+.proximity-circles { position: relative; width: 130px; height: 130px; margin: 0 auto 14px; }
+.circle-outer { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--green-mid); animation: ripple 2s infinite; }
+.circle-inner { position: absolute; inset: 18px; border-radius: 50%; background: var(--green-light); border: 3px solid var(--green); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+@keyframes ripple { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+.proximity-pct-big { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800; color: var(--green-dark); }
+.proximity-label { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+.login-box { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; padding: 32px 20px; background: var(--bg); }
+.login-logo { text-align: center; margin-bottom: 32px; }
+.login-logo .big-icon { width: 72px; height: 72px; background: var(--blue); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 14px; box-shadow: 0 4px 20px rgba(59,130,246,0.3); }
+.login-logo h1 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); }
+.login-logo p  { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+.login-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 24px 20px; box-shadow: var(--shadow); }
+.user-email-badge { display: flex; align-items: center; gap: 10px; background: var(--blue-light); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #1E40AF; font-weight: 500; }
+
+.hidden  { display: none !important; }
+.row     { display: flex; align-items: center; justify-content: space-between; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 0 — LOGIN -->
+<div class="page active" id="page-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="big-icon">📡</div>
+      <h1>MaLivraison MG</h1>
+      <p>Mode GPS · Les deux phones</p>
+    </div>
+    <div class="login-card">
+      <div id="login-error" class="alert alert-error hidden"></div>
+      <div class="form-group">
+        <label class="form-label">Adresse email</label>
+        <input class="form-input" id="login-email" type="email" placeholder="votre@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" id="login-mdp" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" id="btn-login" onclick="seConnecter()">🔐 Se connecter</button>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+      <button class="role-btn blue" onclick="showPage('page-client')" style="max-width:340px;margin:0 auto;">
+        <div class="role-icon-wrap bg-blue">📦</div>
+        <div>
+          <div class="role-title">Je suis Client</div>
+          <div class="role-sub">Suivre ma commande avec un code</div>
+        </div>
+        <span class="role-arrow">›</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 1 — ACCUEIL -->
+<div class="page" id="page-home">
+  <div class="content">
+    <div class="hero">
+      <span class="hero-emoji">📡</span>
+      <h2>Mode GPS<br>Les deux phones</h2>
+      <p>La barre monte quand vous vous rapprochez · 100% = arrivé ✅</p>
+    </div>
+    <div class="card" style="padding:8px;">
+      <div id="home-user-badge" class="user-email-badge hidden">
+        👤 <span id="home-user-email">—</span>
+        <button onclick="seDeconnecter()" style="margin-left:auto;background:none;border:none;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;">Déconnexion</button>
+      </div>
+      <button class="role-btn" onclick="allerLivreur()">
+        <div class="role-icon-wrap bg-green">🛵</div>
+        <div>
+          <div class="role-title">Je suis Livreur</div>
+          <div class="role-sub">Démarrer · GPS activé automatiquement</div>
+        </div>
+        <span class="role-arrow">›</span>
+      </button>
+      <button class="role-btn blue" onclick="showPage('page-client')">
+        <div class="role-icon-wrap bg-blue">📦</div>
+        <div>
+          <div class="role-title">Je suis Client</div>
+          <div class="role-sub">Entrer le code · GPS partagé automatiquement</div>
+        </div>
+        <span class="role-arrow">›</span>
+      </button>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-3);margin-top:8px;">Antananarivo, Madagascar 🇲🇬</p>
+  </div>
+</div>
+
+<!-- PAGE 2 — LIVREUR : Setup -->
+<div class="page" id="page-livreur-setup">
+  <div class="header">
+    <button class="back-btn" onclick="showPage('page-home')">←</button>
+    <div class="header-text">
+      <h1>Nouvelle livraison</h1>
+      <p>Mode GPS des deux phones</p>
+    </div>
+  </div>
+  <div class="content">
+    <div id="setup-error" class="alert alert-error hidden"></div>
+    <div class="card">
+      <div class="card-label">Informations</div>
+      <div class="form-group">
+        <label class="form-label">Votre nom (Livreur)</label>
+        <input class="form-input" id="livreur-nom" type="text" placeholder="Ex : Rakoto Liva">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nom du client</label>
+        <input class="form-input" id="client-nom" type="text" placeholder="Ex : Rabe Mamy">
+      </div>
+    </div>
+    <div class="alert alert-info" style="font-size:12px;">
+      📡 <strong>Pas besoin d'adresse</strong><br>
+      Le client active son GPS quand il entre le code.<br>
+      La barre monte quand vous vous <strong>rapprochez physiquement</strong>.
+    </div>
+    <button class="btn btn-primary" id="btn-demarrer" onclick="demarrerLivraison()">🚀 Démarrer la livraison</button>
+    <button class="btn btn-secondary" onclick="showPage('page-home')">Annuler</button>
+  </div>
+</div>
+
+<!-- PAGE 3 — LIVREUR : Tracking -->
+<div class="page" id="page-livreur-tracking">
+  <div class="header">
+    <div class="header-logo">📡</div>
+    <div class="header-text">
+      <h1 id="tracking-title">En livraison</h1>
+      <p>GPS des deux phones actif</p>
+    </div>
+    <span class="badge badge-live" style="margin-left:auto;" id="livreur-live-badge">
+      <span class="pulse"></span>LIVE
+    </span>
+  </div>
+  <div class="content">
+
+    <div class="code-box">
+      <div class="code-tag">Code à donner au client</div>
+      <div class="code-value" id="code-display">- - - -</div>
+      <div class="code-hint">Le client entre ce code · son GPS s'active automatiquement</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Proximité avec le client</div>
+
+      <div class="proximity-wrap">
+        <div class="proximity-circles">
+          <div class="circle-outer"></div>
+          <div class="circle-inner">🛵</div>
+        </div>
+        <div class="proximity-pct-big" id="livreur-pct">0%</div>
+        <div class="proximity-label">de rapprochement</div>
+      </div>
+
+      <div class="progress-bg">
+        <div class="progress-fill" id="livreur-fill" style="width:2%;">
+          <div class="progress-rider">🛵</div>
+        </div>
+      </div>
+      <div class="progress-milestones">
+        <span class="milestone-txt">Loin</span>
+        <span class="milestone-txt">Mi-chemin</span>
+        <span class="milestone-txt">Arrivé ✅</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="livreur-dist">— km</div>
+          <div class="stat-label">Distance actuelle</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="livreur-dist-init">— km</div>
+          <div class="stat-label">Distance de départ</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div id="gps-status" class="alert alert-info" style="margin:0;">⏳ En attente du GPS du client…</div>
+      <div id="connexion-status" class="alert alert-info hidden" style="margin-top:10px;"></div>
+    </div>
+
+    <div id="btn-terminer-wrap">
+      <button class="btn btn-danger" onclick="confirmerFin()" id="btn-terminer">
+        🏁 Terminer et confirmer la livraison
+      </button>
+      <p style="text-align:center;font-size:11px;color:var(--text-3);margin-top:8px;">
+        Cliquez après avoir remis le colis au client
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 4 — CLIENT -->
+<div class="page" id="page-client">
+  <div class="header">
+    <button class="back-btn" onclick="retourAccueilClient()">←</button>
+    <div class="header-text">
+      <h1>Suivi de livraison</h1>
+      <p>Entrez le code reçu du livreur</p>
+    </div>
+  </div>
+  <div class="content">
+
+    <div id="client-code-form" class="card">
+      <div class="card-label">Code de livraison</div>
+      <div class="form-group">
+        <input class="form-input code-input" id="client-code-input" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="000000" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      </div>
+      <div id="client-error" class="alert alert-error hidden"></div>
+      <button class="btn btn-primary" onclick="rejoindreLivraison()">📦 Suivre ma livraison</button>
+    </div>
+
+    <div id="client-tracking" class="hidden">
+
+      <div id="finish-banner" class="finish-banner hidden">
+        <span class="big-emoji">✅</span>
+        <h2>Livraison réussie !</h2>
+        <p id="finish-text">Votre colis est arrivé.</p>
+      </div>
+
+      <div class="card" id="livreur-info-card">
+        <div class="row">
+          <div class="livreur-row">
+            <div class="avatar" id="client-avatar">RL</div>
+            <div>
+              <div class="livreur-name" id="client-livreur-nom">Livreur</div>
+              <div class="livreur-sub">est en route vers vous 🏠</div>
+            </div>
+          </div>
+          <span class="badge badge-live" id="client-live-badge">
+            <span class="pulse"></span>LIVE
+          </span>
+        </div>
+      </div>
+
+      <div id="client-gps-status" class="hidden"></div>
+
+      <div class="card">
+        <div class="steps-wrap">
+          <div class="step-item done"><div class="step-circle">✓</div><div class="step-txt">Confirmé</div></div>
+          <div class="step-connector done"></div>
+          <div class="step-item done"><div class="step-circle">✓</div><div class="step-txt">Préparé</div></div>
+          <div class="step-connector" id="conn-route"></div>
+          <div class="step-item active" id="step-route"><div class="step-circle">🛵</div><div class="step-txt">En route</div></div>
+          <div class="step-connector" id="conn-livre"></div>
+          <div class="step-item" id="step-livre"><div class="step-circle">🏠</div><div class="step-txt">Livré !</div></div>
+        </div>
+
+        <div class="progress-header">
+          <span class="progress-label-txt">Rapprochement</span>
+          <span class="progress-pct" id="client-pct">0%</span>
+        </div>
+        <div class="progress-bg">
+          <div class="progress-fill" id="client-fill" style="width:2%;">
+            <div class="progress-rider">🛵</div>
+          </div>
+        </div>
+        <div class="progress-milestones">
+          <span class="milestone-txt">Loin</span>
+          <span class="milestone-txt">Mi-chemin</span>
+          <span class="milestone-txt">Arrivé ✅</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="client-dist-reste">— km</div>
+            <div class="stat-label">Distance réelle</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="client-eta">— min</div>
+            <div class="stat-label">Arrivée estimée</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" onclick="quitterSuivi()">Quitter le suivi</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<script>
+// ================================================================
+// ⚙️  FIREBASE CONFIG
+// ================================================================
+const firebaseConfig = {
+  apiKey:            "AIzaSyBKrBVP2N9QqZrl9i9yTKeO45GXCYTk9V0",
+  authDomain:        "malivraison-mg.firebaseapp.com",
+  databaseURL:       "https://malivraison-mg-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "malivraison-mg",
+  storageBucket:     "malivraison-mg.firebasestorage.app",
+  messagingSenderId: "97467529675",
+  appId:             "1:97467529675:web:760e7ec0489d36d0839e4e"
+};
+
+const CONFIGURED = !firebaseConfig.apiKey.includes("VOTRE");
+let db, auth;
+if (CONFIGURED) {
+  firebase.initializeApp(firebaseConfig);
+  db   = firebase.database();
+  auth = firebase.auth();
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById('home-user-email').textContent = user.email;
+      document.getElementById('home-user-badge').classList.remove('hidden');
+      showPage('page-home');
+    } else {
+      showPage('page-login');
+    }
+  });
+}
+
+// ── Variables ───────────────────────────────────────────────────
+let watchId           = null;
+let clientWatchId     = null;
+let codeActuel        = null;
+let distTotale        = 0;       // distance initiale entre les 2 phones
+let livreurRef        = null;
+let clientListener    = null;
+let clientPosListener = null;
+let posLivreurActuel  = null;    // dernière position GPS du livreur
+let posClientActuel   = null;    // dernière position GPS du client (cache local)
+let wakeLock          = null;    // Wake Lock pour empêcher la veille écran
+let connexionListener = null;    // listener Firebase .info/connected
+let estConnecte       = true;    // état de connexion Firebase
+
+// ── Throttle & filtre ───────────────────────────────────────────
+const FILTRE_DEPLACEMENT_LOIN_M  = 5;  // ignorer si déplacement < 5m (quand loin)
+const FILTRE_DEPLACEMENT_PROCHE_M = 2; // ignorer si déplacement < 2m (quand proche < 100m)
+const THROTTLE_LOIN_MS     = 3000;     // throttle quand loin (> 200m)
+const THROTTLE_PROCHE_MS   = 1500;     // throttle quand proche (< 200m) → plus réactif
+const THROTTLE_TRES_PROCHE_MS = 800;   // throttle quand très proche (< 50m) → très réactif
+let dernierEnvoiLivreur    = 0;        // timestamp du dernier update livreur
+let dernierEnvoiClient     = 0;        // timestamp du dernier update client
+let dernierePosEnvoyeeLivreur = null;  // dernière pos envoyée (filtre)
+let dernierePosEnvoyeeClient  = null;  // dernière pos envoyée (filtre)
+let accuracyLivreur        = 999;      // précision GPS du livreur (mètres)
+let accuracyClient         = 999;      // précision GPS du client (mètres)
+let distTotaleFixee        = false;   // empêcher la race condition
+
+// ── Variables carte Leaflet ──
+let carteLeaflet       = null;   // instance de la carte
+let marqueurLivreur    = null;   // marqueur 🛵 sur la carte
+let marqueurClient     = null;   // marqueur 🏠 sur la carte
+let ligneLivreurClient = null;   // ligne entre les deux
+let cercleAccLivreur   = null;   // cercle précision GPS livreur
+let carteInitialisee   = false;  // carte créée ?
+let compteurArrivee        = 0;        // nb lectures consécutives à 99%+
+const SEUIL_ARRIVEE        = 5;        // exiger 5 lectures consécutives avant "livre"
+
+// ── Moyenne glissante pour lisser les sauts de distance ──
+const HISTORIQUE_TAILLE = 5;          // garder les 5 dernières mesures
+let historiqueDistLivreur = [];        // distances GPS brutes livreur
+let historiqueDistClient  = [];        // distances GPS brutes client
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ================================================================
+// AUTH
+// ================================================================
+function seConnecter() {
+  const email = document.getElementById('login-email').value.trim();
+  const mdp   = document.getElementById('login-mdp').value;
+  const btn   = document.getElementById('btn-login');
+  if (!email || !mdp) { afficherErreur('login-error', '⚠️ Entrez votre email et mot de passe'); return; }
+  cacherErreur('login-error');
+  btn.innerHTML = '⏳ Connexion…'; btn.disabled = true;
+  auth.signInWithEmailAndPassword(email, mdp)
+    .then(cred => {
+      document.getElementById('home-user-email').textContent = cred.user.email;
+      document.getElementById('home-user-badge').classList.remove('hidden');
+      btn.innerHTML = '🔐 Se connecter'; btn.disabled = false;
+      showPage('page-home');
+    })
+    .catch(err => {
+      btn.innerHTML = '🔐 Se connecter'; btn.disabled = false;
+      const msg = err.code === 'auth/user-not-found'    ? '❌ Email introuvable.'
+                : err.code === 'auth/wrong-password'    ? '❌ Mot de passe incorrect.'
+                : err.code === 'auth/invalid-email'     ? '❌ Email invalide.'
+                : err.code === 'auth/too-many-requests' ? '❌ Trop de tentatives.'
+                : '❌ ' + err.message;
+      afficherErreur('login-error', msg);
+    });
+}
+
+function seDeconnecter() {
+  if (!confirm('Se déconnecter ?')) return;
+  nettoyerTout();
+  auth.signOut().then(() => showPage('page-login'));
+}
+
+function allerLivreur() {
+  if (!auth || !auth.currentUser) showPage('page-login');
+  else showPage('page-livreur-setup');
+}
+
+// ================================================================
+// UTILITAIRES
+// ================================================================
+function genererCode() { return Math.floor(100000 + Math.random() * 900000).toString(); }
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLa = (lat2-lat1)*Math.PI/180, dLo = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLa/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ✅ FONCTION DE PROXIMITÉ v4 — Seuils réduits pour ne pas bloquer à 100%
+function calculerProximite(distKm, distTotaleKm) {
+  const distM = distKm * 1000;
+
+  // ── Précision GPS : capée à 15m par phone (max 30m combiné) ──
+  // FIX BUG 2 : avant c'était 40m → 53m combiné → 30m réel = 100% (faux !)
+  // Maintenant : 15m → 30m combiné → seulement < 30m réel = 100%
+  const accL = Math.min(accuracyLivreur === 999 ? 20 : accuracyLivreur, 15);
+  const accC = Math.min(accuracyClient  === 999 ? 20 : accuracyClient,  15);
+  const precisionCombinee = accL + accC; // max 30m
+
+  // ── RÈGLE 1 : 100% uniquement si distance GPS = 0 (impossible en pratique) ──
+  // ✅ RÉALISTE : 2m → 98%, 5m → 95%, 10m → 90%, 30m → 75%
+  // Formule : pct = 100 - (distM / (precisionCombinee * 2)) * 25
+  // → à 2m  : 100 - (2/60)*25  = 100 - 0.8  = 99.2% → 99%
+  // → à 5m  : 100 - (5/60)*25  = 100 - 2.1  = 97.9% → 98%
+  // → à 10m : 100 - (10/60)*25 = 100 - 4.2  = 95.8% → 96%
+  // → à 30m : 100 - (30/60)*25 = 100 - 12.5 = 87.5% → 88%
+  // → à 60m : 100 - (60/60)*25 = 100 - 25   = 75%
+  if (distM <= precisionCombinee * 2) {
+    const pct = 100 - (distM / (precisionCombinee * 2)) * 25;
+    return Math.min(99, Math.max(75, Math.round(pct)));
+  }
+
+  // ── RÈGLE 3 : Trajet long (> 200m) → ratio simple ──
+  if (distTotaleKm > 0.2) {
+    const ratio = Math.max(0, Math.min(1, 1 - distKm / distTotaleKm));
+    // Boost dans les 100 derniers mètres
+    if (distM < 100) {
+      return Math.round(Math.max(ratio * 100, 80 + (100 - distM) / 100 * 19));
+    }
+    return Math.max(0, Math.min(84, Math.round(ratio * 100)));
+  }
+
+  // ── RÈGLE 4 : Trajet court (< 200m) → courbe douce ──
+  if (distM <= 0) return 100;
+  if (distM <= 200) {
+    // Courbe : 0m→100%, 50m→75%, 100m→55%, 150m→38%, 200m→0%
+    const courbe = 1 - Math.pow(distM / 200, 0.55);
+    return Math.max(20, Math.min(84, Math.round(courbe * 100)));
+  }
+  if (distM <= 500)  return Math.round(20 - (distM - 200) / 300 * 10);
+  if (distM <= 1000) return Math.round(10 - (distM - 500) / 500 * 5);
+  if (distM <= 5000) return Math.round(5  - (distM - 1000) / 4000 * 4);
+  return 1;
+}
+
+function initiales(nom) { return nom.trim().split(/\s+/).map(n=>n[0]).join('').toUpperCase().slice(0,2); }
+
+// ── Lissage par moyenne glissante ──
+function ajouterHistorique(historique, valeur) {
+  historique.push(valeur);
+  if (historique.length > HISTORIQUE_TAILLE) historique.shift();
+  return historique.reduce((a, b) => a + b, 0) / historique.length;
+}
+
+// ── Correction affichage : soustraire le bruit GPS combiné ──
+// On affiche la distance RÉELLE estimée (sans le bruit GPS)
+function distanceCorrigee(distKm) {
+  const distM = distKm * 1000;
+  // Bruit GPS combiné = moyenne des deux précisions
+  const accL  = Math.min(accuracyLivreur === 999 ? 30 : accuracyLivreur, 50);
+  const accC  = Math.min(accuracyClient  === 999 ? 30 : accuracyClient,  50);
+  const bruit = (accL + accC) / 2;  // ex: (11 + 85) / 2 = 48m
+  const reel  = Math.max(0, distM - bruit);
+  return reel; // en mètres
+}
+
+// ── Formater la distance corrigée pour affichage ──
+function formaterDistance(distKm, historique) {
+  // 1. Lisser par moyenne glissante
+  const distLisseeKm = ajouterHistorique(historique, distKm);
+  // 2. Corriger le bruit GPS
+  const reelM = distanceCorrigee(distLisseeKm);
+
+  if (reelM < 3)   return '< 3 m';
+  if (reelM < 10)  return '~' + Math.round(reelM) + ' m';
+  if (reelM < 100) return Math.round(reelM / 5) * 5 + ' m';  // arrondi à 5m
+  if (reelM < 1000) return Math.round(reelM / 10) * 10 + ' m'; // arrondi à 10m
+  return (reelM / 1000).toFixed(1) + ' km';
+}
+
+// ── ETA corrigé basé sur la vraie distance ──
+function calculerETA(distKm) {
+  const reelM = distanceCorrigee(distKm);
+  if (reelM < 50) return 'Imminent !';
+  const km     = reelM / 1000;
+  const minutes = Math.ceil((km / 22) * 60); // 22 km/h moyenne
+  return '~' + minutes + ' min';
+}
+function afficherErreur(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.remove('hidden'); }
+function cacherErreur(id) { document.getElementById(id).classList.add('hidden'); }
+
+function nettoyerTout() {
+  if (watchId)       navigator.geolocation.clearWatch(watchId);
+  if (clientWatchId) navigator.geolocation.clearWatch(clientWatchId);
+  if (clientPosListener && livreurRef) {
+    livreurRef.child('positionClient').off('value', clientPosListener);
+    clientPosListener = null;
+  }
+  // Arrêter le monitoring de connexion
+  if (connexionListener) {
+    db.ref('.info/connected').off('value', connexionListener);
+    connexionListener = null;
+  }
+  // Libérer le Wake Lock
+  libererWakeLock();
+  watchId = null; clientWatchId = null;
+  // Reset complet pour la prochaine livraison
+  distTotale = 0;
+  distTotaleFixee = false;
+  posLivreurActuel = null;
+  posClientActuel = null;
+  livreurRef = null;
+  codeActuel = null;
+  dernierEnvoiLivreur = 0;
+  dernierEnvoiClient = 0;
+  dernierePosEnvoyeeLivreur = null;
+  dernierePosEnvoyeeClient = null;
+  estConnecte = true;
+}
+
+// ================================================================
+// LIVREUR — Démarrer (pas d'adresse, GPS direct)
+// ================================================================
+function demarrerLivraison() {
+  const nom    = document.getElementById('livreur-nom').value.trim();
+  const client = document.getElementById('client-nom').value.trim();
+  if (!nom)    { afficherErreur('setup-error', '👤 Entrez votre nom'); return; }
+  if (!client) { afficherErreur('setup-error', '📦 Entrez le nom du client'); return; }
+  if (!navigator.geolocation) { afficherErreur('setup-error', '❌ GPS non disponible.'); return; }
+  cacherErreur('setup-error');
+
+  const btn = document.getElementById('btn-demarrer');
+  btn.innerHTML = '📡 Activation GPS…'; btn.disabled = true;
+
+  // Reset distance pour chaque nouvelle livraison
+  distTotale = 0; distTotaleFixee = false; posLivreurActuel = null; posClientActuel = null;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const posDepart = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      posLivreurActuel = posDepart;
+      codeActuel = genererCode();
+
+      db.ref('livraisons/' + codeActuel).set({
+        code: codeActuel, livreur: nom, client: client, mode: 2,
+        depart: posDepart, position: posDepart,
+        statut: 'en_route', progression: 0, distReste: '0.00', timestamp: Date.now()
+      }).then(() => {
+        livreurRef = db.ref('livraisons/' + codeActuel);
+        document.getElementById('code-display').textContent   = codeActuel;
+        document.getElementById('tracking-title').textContent = 'Livraison → ' + client;
+        btn.innerHTML = '🚀 Démarrer'; btn.disabled = false;
+        showPage('page-livreur-tracking');
+        demarrerGPS();
+      }).catch(err => {
+        btn.innerHTML = '🚀 Démarrer la livraison'; btn.disabled = false;
+        afficherErreur('setup-error', 'Erreur Firebase : ' + err.message);
+      });
+    },
+    () => {
+      btn.innerHTML = '🚀 Démarrer la livraison'; btn.disabled = false;
+      afficherErreur('setup-error', '❌ GPS refusé. Autorisez la localisation dans le navigateur.');
+    },
+    { enableHighAccuracy: true, timeout: 20000 }
+  );
+}
+
+// ================================================================
+// LIVREUR — GPS continu + écoute position client (temps réel)
+// ================================================================
+function demarrerGPS() {
+  setGPSStatus('info', '⏳ En attente que le client entre le code…');
+
+  // ── Wake Lock : empêcher l'écran de s'éteindre pendant la livraison ──
+  activerWakeLock();
+
+  // ── Monitoring connexion Firebase ──
+  demarrerMonitorConnexion();
+
+  // ── Listener CIBLÉ : écouter UNIQUEMENT positionClient (pas tout le doc) ──
+  // ── Écouter position client ET sa précision GPS ──
+  clientPosListener = livreurRef.child('positionClient').on('value', snap => {
+    const pos = snap.val();
+    if (!pos) return;
+
+    // ✅ Cache local mis à jour instantanément
+    posClientActuel = pos;
+
+    // ── Fixer distTotale (ou recalculer si trop petite) ──
+    if (posLivreurActuel) {
+      const nouvelleDist = haversine(
+        posLivreurActuel.lat, posLivreurActuel.lng,
+        posClientActuel.lat, posClientActuel.lng
+      );
+      const precMin = Math.min(accuracyLivreur, 40) + Math.min(accuracyClient === 999 ? 30 : accuracyClient, 40);
+      
+      // ✅ FIX BUG 3 : distTotale = TOUJOURS le maximum mesuré
+      // Si phones s'éloignent → distTotale monte → formule reste correcte
+      // Si phones se rapprochent → distTotale reste au max → % monte vers 100%
+      const DIST_MIN_KM = 0.010; // 10m minimum pour éviter division par zéro
+      if (!distTotaleFixee) {
+        // Premier calcul : fixer distTotale
+        distTotaleFixee = true;
+        distTotale = Math.max(nouvelleDist, DIST_MIN_KM);
+        setGPSStatus('success', '✅ Client connecté ! Distance initiale: ' + Math.round(distTotale * 1000) + 'm');
+      } else if (nouvelleDist > distTotale) {
+        // Phones qui s'éloignent → recalibrer à la hausse
+        distTotale = nouvelleDist;
+      }
+      // Jamais à la baisse : distTotale garde le max historique
+      distTotale = Math.max(distTotale, DIST_MIN_KM);
+      livreurRef.update({ distanceTotale: distTotale });
+    }
+
+    // ✅ Recalculer et mettre à jour l'UI immédiatement quand le client bouge
+    if (posLivreurActuel && distTotaleFixee) {
+      majUILivreurLocale();
+    }
+  });
+
+  // ── Écouter aussi la précision GPS du client ──
+  livreurRef.child('accuracyClient').on('value', snap => {
+    const acc = snap.val();
+    if (acc) accuracyClient = acc;
+  });
+
+  // ── GPS livreur en continu (avec filtre + throttle adaptatif) ──
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      accuracyLivreur = pos.coords.accuracy || 20; // ✅ Capturer la précision GPS
+      posLivreurActuel = { lat, lng };
+
+      // ✅ Mise à jour UI LOCALE instantanée (zéro latence, pas de réseau)
+      if (posClientActuel && distTotaleFixee) {
+        majUILivreurLocale();
+      }
+
+      // ── Calcul distance actuelle vers client ──
+      const distActuelleKm = posClientActuel ? haversine(lat, lng, posClientActuel.lat, posClientActuel.lng) : 999;
+      
+      // ── Pré-calcul pct pour savoir si on est proche ──
+      const pctPreview = (posClientActuel && distTotaleFixee) ? calculerProximite(distActuelleKm, distTotale) : 0;
+      const tresProche = pctPreview >= 95 || distActuelleKm * 1000 < (Math.min(accuracyLivreur,40) + Math.min(accuracyClient===999?30:accuracyClient,40)) * 3;
+
+      // ── FILTRE déplacement : désactivé si très proche (> 95%) ──
+      if (!tresProche && dernierePosEnvoyeeLivreur) {
+        const filtreActuel = distActuelleKm < 0.1 ? FILTRE_DEPLACEMENT_PROCHE_M : FILTRE_DEPLACEMENT_LOIN_M;
+        const deplacementM = haversine(lat, lng, dernierePosEnvoyeeLivreur.lat, dernierePosEnvoyeeLivreur.lng) * 1000;
+        if (deplacementM < filtreActuel) return;
+      }
+
+      // ── THROTTLE adaptatif : très rapide si très proche ──
+      const maintenant = Date.now();
+      const throttleActuel = tresProche           ? 500              // < 50m  → toutes les 0.5s
+                           : distActuelleKm < 0.05 ? THROTTLE_TRES_PROCHE_MS
+                           : distActuelleKm < 0.2  ? THROTTLE_PROCHE_MS
+                           : THROTTLE_LOIN_MS;
+      if (maintenant - dernierEnvoiLivreur < throttleActuel) return;
+
+      // Si le client n'a pas encore envoyé sa position
+      if (!posClientActuel) {
+        livreurRef.update({ position: { lat, lng }, accuracy: accuracyLivreur, timestamp: maintenant });
+        dernierEnvoiLivreur = maintenant;
+        dernierePosEnvoyeeLivreur = { lat, lng };
+        return;
+      }
+
+      // Fixer distTotale si pas encore fait
+      if (!distTotaleFixee) {
+        distTotaleFixee = true;
+        distTotale = haversine(lat, lng, posClientActuel.lat, posClientActuel.lng);
+        livreurRef.update({ distanceTotale: distTotale });
+        document.getElementById('livreur-dist-init').textContent = distTotale.toFixed(2) + ' km';
+      }
+
+      // Calcul distance + écriture Firebase throttlée
+      let distActuelle = Math.max(0, haversine(lat, lng, posClientActuel.lat, posClientActuel.lng));
+      const pct = calculerProximite(distActuelle, distTotale);
+
+      const updateData = { 
+        position: { lat, lng }, 
+        accuracy: accuracyLivreur,
+        progression: pct, 
+        distReste: distActuelle.toFixed(2), 
+        timestamp: maintenant 
+      };
+
+      // ✅ PAS D'AUTO-TERMINER — le livreur clique manuellement "Terminer"
+      // Raison : le jitter GPS (10-40m) déclenche de fausses fins de livraison
+      // Le livreur confirme lui-même après remise du colis en main propre
+
+      livreurRef.update(updateData);
+      dernierEnvoiLivreur = maintenant;
+      dernierePosEnvoyeeLivreur = { lat, lng };
+    },
+    () => { setGPSStatus('warning', '⚠️ Signal GPS faible…'); },
+    { enableHighAccuracy: true, maximumAge: 500, timeout: 15000 }  // ✅ maximumAge réduit
+  );
+}
+
+// ✅ Mise à jour UI livreur INSTANTANÉE — distance corrigée + lissée
+function majUILivreurLocale() {
+  if (!posLivreurActuel || !posClientActuel) return;
+  const distActuelle = Math.max(0, haversine(
+    posLivreurActuel.lat, posLivreurActuel.lng,
+    posClientActuel.lat, posClientActuel.lng
+  ));
+  const pct = calculerProximite(distActuelle, distTotale);
+
+  // ✅ ÉTAPE 1 — Distance corrigée et lissée pour l'affichage
+  const distAffichee = formaterDistance(distActuelle, historiqueDistLivreur);
+
+  // ✅ ÉTAPE 2 — Distance initiale corrigée
+  const initM   = distanceCorrigee(distTotale);
+  const initAff = initM < 3   ? '< 3 m'
+                : initM < 100 ? Math.round(initM / 5) * 5 + ' m'
+                : initM < 1000 ? Math.round(initM / 10) * 10 + ' m'
+                : (initM / 1000).toFixed(1) + ' km';
+
+  document.getElementById('livreur-pct').textContent      = pct + '%';
+  document.getElementById('livreur-fill').style.width     = Math.max(2, pct) + '%';
+  document.getElementById('livreur-dist').textContent     = distAffichee;       // ✅ corrigé
+  document.getElementById('livreur-dist-init').textContent = initAff;           // ✅ corrigé
+
+  // ✅ ÉTAPE 3 — UX : message adapté au % de proximité
+  if (pct >= 99) {
+    setGPSStatus('success', '🏠 Vous êtes arrivé ! Remettez le colis puis cliquez Terminer ↓');
+    // Faire clignoter le bouton terminer
+    const btnT = document.getElementById('btn-terminer');
+    if (btnT) { btnT.style.animation = 'pulse-btn 1s infinite'; }
+  } else if (pct >= 95) {
+    setGPSStatus('success', '📍 Presque arrivé ! Plus que ' + distAffichee);
+  } else if (pct >= 80) {
+    setGPSStatus('success', '🛵 Très proche ! ' + distAffichee + ' restants');
+  } else {
+    const precInfo = ' · GPS: ±' + Math.round(accuracyLivreur) + 'm';
+    setGPSStatus('success', '✅ ' + new Date().toLocaleTimeString() + precInfo);
+  }
+}
+
+function setGPSStatus(type, msg) {
+  const el = document.getElementById('gps-status');
+  el.className = 'alert alert-' + (type==='success'?'success':type==='warning'?'warning':'info');
+  el.textContent = msg;
+}
+
+// ================================================================
+// WAKE LOCK — Empêcher l'écran de s'éteindre pendant la livraison
+// ================================================================
+async function activerWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('🔒 Wake Lock activé — écran restera allumé');
+      // Réactiver si la page redevient visible (après alt-tab)
+      document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      });
+    }
+  } catch (e) { console.log('Wake Lock non disponible:', e.message); }
+}
+
+function libererWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; console.log('🔓 Wake Lock libéré'); }
+}
+
+// ================================================================
+// CONNEXION MONITOR — Détecter perte de réseau Firebase
+// ================================================================
+function demarrerMonitorConnexion() {
+  const statusEl = document.getElementById('connexion-status');
+  connexionListener = db.ref('.info/connected').on('value', snap => {
+    estConnecte = snap.val() === true;
+    if (estConnecte) {
+      statusEl.classList.add('hidden');
+      const badge = document.getElementById('livreur-live-badge');
+      if (badge) { badge.className = 'badge badge-live'; badge.innerHTML = '<span class="pulse"></span>LIVE'; }
+    } else {
+      statusEl.className = 'alert alert-warning';
+      statusEl.textContent = '📡 Connexion perdue — les données seront envoyées à la reconnexion';
+      statusEl.classList.remove('hidden');
+      const badge = document.getElementById('livreur-live-badge');
+      if (badge) { badge.className = 'badge'; badge.style.background = '#FEF3C7'; badge.style.color = '#92400E'; badge.innerHTML = '⚠️ HORS LIGNE'; }
+    }
+  });
+}
+
+function confirmerFin() {
+  if (!confirm('Confirmer la fin de la livraison ?')) return;
+  // Sauvegarder la ref AVANT le nettoyage (qui remet livreurRef à null)
+  const ref = livreurRef;
+  nettoyerTout();
+  if (ref) ref.update({ statut: 'livre', progression: 100 });
+  showPage('page-home');
+}
+
+// ================================================================
+// CLIENT — Rejoindre + activer GPS
+// ================================================================
+function rejoindreLivraison() {
+  const code = document.getElementById('client-code-input').value.trim();
+  if (code.length !== 6) { afficherErreur('client-error', '⚠️ Code à 6 chiffres.'); return; }
+  cacherErreur('client-error');
+
+  db.ref('livraisons/' + code).once('value')
+    .then(snapshot => {
+      if (!snapshot.exists()) { afficherErreur('client-error', '❌ Code introuvable.'); return; }
+      const data = snapshot.val();
+
+      // ✅ Vérifier que la livraison n'est pas déjà terminée
+      if (data.statut === 'livre') {
+        afficherErreur('client-error', '✅ Cette livraison est déjà terminée.');
+        return;
+      }
+
+      codeActuel = code;
+
+      document.getElementById('client-avatar').textContent      = initiales(data.livreur);
+      document.getElementById('client-livreur-nom').textContent = data.livreur + ' → ' + data.client;
+      document.getElementById('client-code-form').classList.add('hidden');
+      document.getElementById('client-tracking').classList.remove('hidden');
+
+      // ► Activer GPS du client
+      activerGPSClient(code);
+
+      // ► Écouter progression en temps réel
+      clientListener = db.ref('livraisons/' + code).on('value', snap => {
+        if (snap.exists()) majUIClient(snap.val());
+      });
+    })
+    .catch(err => { afficherErreur('client-error', 'Erreur : ' + err.message); });
+}
+
+function activerGPSClient(code) {
+  if (!navigator.geolocation) return;
+  const statusEl = document.getElementById('client-gps-status');
+  statusEl.className   = 'alert alert-info';
+  statusEl.textContent = '📡 Activation GPS… Autorisez la localisation si demandé.';
+  statusEl.classList.remove('hidden');
+
+  let premierEnvoi = true; // ✅ FIX BUG 1 : forcer envoi immédiat au premier appel
+
+  clientWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const acc = pos.coords.accuracy || 30;
+      const maintenant = Date.now();
+
+      // ✅ PREMIER ENVOI : toujours envoyer immédiatement, sans aucun filtre
+      if (premierEnvoi) {
+        premierEnvoi = false;
+        db.ref('livraisons/' + code).update({
+          positionClient: { lat, lng },
+          accuracyClient: acc
+        });
+        dernierEnvoiClient       = maintenant;
+        dernierePosEnvoyeeClient = { lat, lng };
+        statusEl.className   = 'alert alert-success';
+        statusEl.textContent = '✅ GPS activé · Précision: ±' + Math.round(acc) + 'm';
+        return;
+      }
+
+      // ── Envois suivants : filtre déplacement (min 3m) ──
+      if (dernierePosEnvoyeeClient) {
+        const deplacementM = haversine(lat, lng, dernierePosEnvoyeeClient.lat, dernierePosEnvoyeeClient.lng) * 1000;
+        if (deplacementM < 3) return; // ignorer si moins de 3m de mouvement
+      }
+
+      // ── Throttle : max 1 envoi par 2 secondes ──
+      if (maintenant - dernierEnvoiClient < 2000) return;
+
+      db.ref('livraisons/' + code).update({
+        positionClient: { lat, lng },
+        accuracyClient: acc
+      });
+      dernierEnvoiClient       = maintenant;
+      dernierePosEnvoyeeClient = { lat, lng };
+      statusEl.className   = 'alert alert-success';
+      statusEl.textContent = '✅ GPS à jour · ±' + Math.round(acc) + 'm · ' + new Date().toLocaleTimeString();
+    },
+    (err) => {
+      statusEl.className   = 'alert alert-warning';
+      statusEl.textContent = '⚠️ GPS refusé. Allez dans paramètres navigateur → Autoriser localisation.';
+      premierEnvoi = false;
+    },
+    { enableHighAccuracy: true, maximumAge: 500, timeout: 20000 }
+  );
+}
+
+// ================================================================
+// CARTE LEAFLET — OpenStreetMap (gratuit, sans clé API)
+// ================================================================
+
+// Icônes personnalisées légères (pas d'images externes)
+function creerIcone(emoji, couleur) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="background:' + couleur + ';border:3px solid white;border-radius:50%;'
+        + 'width:34px;height:34px;display:flex;align-items:center;justify-content:center;'
+        + 'font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">' + emoji + '</div>',
+    iconSize:   [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor:[0, -17]
+  });
+}
+
+function initialiserCarte(latLiv, lngLiv, latCli, lngCli) {
+  // Afficher la carte, cacher le loading
+  document.getElementById('carte-loading').classList.add('hidden');
+  document.getElementById('carte-client').classList.remove('hidden');
+
+  const centre = [(latLiv + latCli) / 2, (lngLiv + lngCli) / 2];
+
+  // Créer la carte Leaflet
+  carteLeaflet = L.map('carte-client', {
+    center:          centre,
+    zoom:            16,
+    zoomControl:     true,
+    attributionControl: false
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(carteLeaflet);
+
+  marqueurLivreur = L.marker([latLiv, lngLiv], {
+    icon: creerIcone('🛵', '#16A369'), zIndexOffset: 100
+  }).addTo(carteLeaflet).bindPopup('🛵 Livreur');
+
+  marqueurClient = L.marker([latCli, lngCli], {
+    icon: creerIcone('🏠', '#3B82F6'), zIndexOffset: 50
+  }).addTo(carteLeaflet).bindPopup('🏠 Votre position');
+
+  ligneLivreurClient = L.polyline(
+    [[latLiv, lngLiv], [latCli, lngCli]],
+    { color: '#16A369', weight: 3, dashArray: '6,8', opacity: 0.7 }
+  ).addTo(carteLeaflet);
+
+  // ✅ FIX : invalider la taille APRÈS que le div est visible
+  // Sans ça, Leaflet ne calcule pas les dimensions → carte vide
+  setTimeout(() => {
+    carteLeaflet.invalidateSize();
+    const bounds = L.latLngBounds([[latLiv,lngLiv],[latCli,lngCli]]);
+    carteLeaflet.fitBounds(bounds, { padding: [50, 50] });
+  }, 100);
+
+  carteInitialisee = true;
+}
+
+function mettreAJourCarte(latLiv, lngLiv, latCli, lngCli, accLiv) {
+  if (!carteInitialisee) {
+    initialiserCarte(latLiv, lngLiv, latCli, lngCli);
+    return;
+  }
+
+  // Déplacer marqueur livreur en douceur
+  marqueurLivreur.setLatLng([latLiv, lngLiv]);
+
+  // Mettre à jour la ligne
+  ligneLivreurClient.setLatLngs([[latLiv,lngLiv],[latCli,lngCli]]);
+
+  // Cercle de précision GPS livreur (optionnel, léger)
+  if (accLiv && accLiv < 100) {
+    if (cercleAccLivreur) {
+      cercleAccLivreur.setLatLng([latLiv, lngLiv]).setRadius(accLiv);
+    } else {
+      cercleAccLivreur = L.circle([latLiv, lngLiv], {
+        radius:      accLiv,
+        color:       '#16A369',
+        fillColor:   '#16A369',
+        fillOpacity: 0.08,
+        weight:      1
+      }).addTo(carteLeaflet);
+    }
+  }
+
+  // Recentrer doucement pour garder les deux marqueurs visibles
+  const bounds = L.latLngBounds([[latLiv,lngLiv],[latCli,lngCli]]);
+  carteLeaflet.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 0.8 });
+}
+
+function detruireCarte() {
+  if (carteLeaflet) { carteLeaflet.remove(); carteLeaflet = null; }
+  marqueurLivreur = marqueurClient = ligneLivreurClient = cercleAccLivreur = null;
+  carteInitialisee = false;
+  document.getElementById('carte-loading').classList.remove('hidden');
+  document.getElementById('carte-client').classList.add('hidden');
+}
+
+function majUIClient(data) {
+  const pct   = data.progression || 0;
+  const reste = parseFloat(data.distReste) || 0;
+  const livre = data.statut === 'livre';
+
+  // ✅ ÉTAPE 1 — Distance corrigée + lissée côté client
+  const distAffichee = formaterDistance(reste, historiqueDistClient);
+
+  // ✅ ÉTAPE 2 — ETA corrigé
+  const etaAff = livre        ? '✅ Arrivé !'
+               : pct >= 100   ? '✅ Arrivé !'
+               : pct >= 95    ? '🏠 Imminent !'
+               : pct >= 80    ? '📍 Presque là !'
+               : calculerETA(reste);
+
+  document.getElementById('client-pct').textContent        = pct + '%';
+  document.getElementById('client-fill').style.width       = Math.max(2, pct) + '%';
+  document.getElementById('client-dist-reste').textContent = distAffichee;
+  document.getElementById('client-eta').textContent        = etaAff;
+
+  // ✅ CARTE — toujours afficher (même livraison terminée)
+  if (data.position && data.positionClient) {
+    mettreAJourCarte(
+      data.position.lat,       data.position.lng,
+      data.positionClient.lat, data.positionClient.lng,
+      data.accuracy || 50
+    );
+  }
+
+  // ✅ Afficher "Livré" si statut=livre OU progression=100
+  if (livre || pct >= 100) {
+    document.getElementById('step-route').className = 'step-item done';
+    document.getElementById('step-livre').className = 'step-item active';
+    document.getElementById('conn-route').classList.add('done');
+    document.getElementById('conn-livre').classList.add('done');
+    document.getElementById('finish-banner').classList.remove('hidden');
+    document.getElementById('finish-text').textContent = '🎉 ' + data.livreur + ' est arrivé chez vous !';
+    document.getElementById('livreur-info-card').classList.add('hidden');
+    document.getElementById('client-live-badge').className = 'badge badge-done';
+    document.getElementById('client-live-badge').innerHTML = '✅ LIVRÉ';
+    if (clientWatchId) { navigator.geolocation.clearWatch(clientWatchId); clientWatchId = null; }
+  }
+}
+
+function quitterSuivi() {
+  if (codeActuel && clientListener) { db.ref('livraisons/' + codeActuel).off('value', clientListener); clientListener = null; }
+  if (clientWatchId) { navigator.geolocation.clearWatch(clientWatchId); clientWatchId = null; }
+  detruireCarte(); // ✅ Libérer la mémoire de la carte
+  document.getElementById('client-code-form').classList.remove('hidden');
+  document.getElementById('client-tracking').classList.add('hidden');
+  document.getElementById('client-code-input').value = '';
+  document.getElementById('finish-banner').classList.add('hidden');
+  document.getElementById('livreur-info-card').classList.remove('hidden');
+  document.getElementById('client-gps-status').classList.add('hidden');
+  codeActuel = null;
+  showPage('page-home');
+}
+
+function retourAccueilClient() {
+  if (codeActuel && clientListener) { db.ref('livraisons/' + codeActuel).off('value', clientListener); clientListener = null; }
+  if (clientWatchId) { navigator.geolocation.clearWatch(clientWatchId); clientWatchId = null; }
+  detruireCarte();
+  document.getElementById('client-code-form').classList.remove('hidden');
+  document.getElementById('client-tracking').classList.add('hidden');
+  document.getElementById('client-code-input').value = '';
+  codeActuel = null;
+  showPage('page-home');
+}
+</script>
+</body>
+</html>

@@ -467,6 +467,8 @@ let dernierePosEnvoyeeClient  = null;  // dernière pos envoyée (filtre)
 let accuracyLivreur        = 999;      // précision GPS du livreur (mètres)
 let accuracyClient         = 999;      // précision GPS du client (mètres)
 let distTotaleFixee        = false;   // empêcher la race condition
+let compteurArrivee        = 0;        // nb lectures consécutives à 99%+
+const SEUIL_ARRIVEE        = 5;        // exiger 5 lectures consécutives avant "livre"
 
 // ── Moyenne glissante pour lisser les sauts de distance ──
 const HISTORIQUE_TAILLE = 5;          // garder les 5 dernières mesures
@@ -823,14 +825,21 @@ function demarrerGPS() {
         timestamp: maintenant 
       };
 
-      // ✅ AUTO-TERMINER : si pct=100, changer statut → "livre" automatiquement
-      if (pct >= 100) {
-        updateData.statut    = 'livre';
-        updateData.progression = 100;
-        // Arrêter le GPS après 2 secondes (laisser le temps à Firebase de notifier)
-        setTimeout(() => {
-          if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-        }, 2000);
+      // ✅ AUTO-TERMINER : exiger 5 lectures consécutives >= 99%
+      // Pour éviter que le jitter GPS déclenche faussement la fin
+      if (pct >= 99) {
+        compteurArrivee++;
+        setGPSStatus('success', '🏠 Arrivée confirmée ' + compteurArrivee + '/' + SEUIL_ARRIVEE + '…');
+        if (compteurArrivee >= SEUIL_ARRIVEE) {
+          updateData.statut      = 'livre';
+          updateData.progression = 100;
+          setTimeout(() => {
+            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+          }, 2000);
+        }
+      } else {
+        // Reset si on s'éloigne → pas encore arrivé
+        compteurArrivee = 0;
       }
 
       livreurRef.update(updateData);

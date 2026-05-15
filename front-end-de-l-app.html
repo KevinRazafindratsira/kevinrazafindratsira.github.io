@@ -313,7 +313,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div id="connexion-status" class="alert alert-info hidden" style="margin-top:10px;"></div>
     </div>
 
-    <button class="btn btn-danger" onclick="confirmerFin()">🏁 Terminer la livraison</button>
+    <div id="btn-terminer-wrap">
+      <button class="btn btn-danger" onclick="confirmerFin()" id="btn-terminer">
+        🏁 Terminer et confirmer la livraison
+      </button>
+      <p style="text-align:center;font-size:11px;color:var(--text-3);margin-top:8px;">
+        Cliquez après avoir remis le colis au client
+      </p>
+    </div>
   </div>
 </div>
 
@@ -825,22 +832,9 @@ function demarrerGPS() {
         timestamp: maintenant 
       };
 
-      // ✅ AUTO-TERMINER : exiger 5 lectures consécutives >= 99%
-      // Pour éviter que le jitter GPS déclenche faussement la fin
-      if (pct >= 99) {
-        compteurArrivee++;
-        setGPSStatus('success', '🏠 Arrivée confirmée ' + compteurArrivee + '/' + SEUIL_ARRIVEE + '…');
-        if (compteurArrivee >= SEUIL_ARRIVEE) {
-          updateData.statut      = 'livre';
-          updateData.progression = 100;
-          setTimeout(() => {
-            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-          }, 2000);
-        }
-      } else {
-        // Reset si on s'éloigne → pas encore arrivé
-        compteurArrivee = 0;
-      }
+      // ✅ PAS D'AUTO-TERMINER — le livreur clique manuellement "Terminer"
+      // Raison : le jitter GPS (10-40m) déclenche de fausses fins de livraison
+      // Le livreur confirme lui-même après remise du colis en main propre
 
       livreurRef.update(updateData);
       dernierEnvoiLivreur = maintenant;
@@ -876,10 +870,11 @@ function majUILivreurLocale() {
   document.getElementById('livreur-dist-init').textContent = initAff;           // ✅ corrigé
 
   // ✅ ÉTAPE 3 — UX : message adapté au % de proximité
-  if (pct >= 100) {
-    const statusEl = document.getElementById('gps-status');
-    statusEl.className   = 'alert alert-success';
-    statusEl.textContent = '🎉 Livraison terminée automatiquement ! Le client est notifié.';
+  if (pct >= 99) {
+    setGPSStatus('success', '🏠 Vous êtes arrivé ! Remettez le colis puis cliquez Terminer ↓');
+    // Faire clignoter le bouton terminer
+    const btnT = document.getElementById('btn-terminer');
+    if (btnT) { btnT.style.animation = 'pulse-btn 1s infinite'; }
   } else if (pct >= 95) {
     setGPSStatus('success', '📍 Presque arrivé ! Plus que ' + distAffichee);
   } else if (pct >= 80) {
